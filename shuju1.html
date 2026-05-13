@@ -62,6 +62,10 @@
         .expand-content.active {
             max-height: 1000px;
         }
+
+        .icon-rotate {
+            transition: transform 0.3s ease;
+        }
     </style>
 </head>
 <body class="p-4 pb-24">
@@ -148,7 +152,6 @@
         </div>
     </div>
 
-    <!-- 未提交教师名单模态窗口 -->
     <div id="unsubmittedModal" class="fixed inset-0 z-50 hidden">
         <div class="modal-overlay absolute inset-0" onclick="closeUnsubmittedModal()"></div>
         <div class="absolute inset-4 flex items-center justify-center">
@@ -271,19 +274,14 @@
             });
         }
 
-        function toggleExpand(contentId) {
-            const content = document.getElementById(contentId);
-            const iconId = contentId.replace('-content', '-icon');
-            const icon = document.getElementById(iconId);
+        function toggleExpand(index) {
+            const content = document.getElementById(`expand-content-${index}`);
+            const icon = document.getElementById(`expand-icon-${index}`);
             
             content.classList.toggle('active');
             
             if (icon) {
-                if (content.classList.contains('active')) {
-                    icon.style.transform = 'rotate(180deg)';
-                } else {
-                    icon.style.transform = 'rotate(0deg)';
-                }
+                icon.style.transform = content.classList.contains('active') ? 'rotate(180deg)' : 'rotate(0deg)';
             }
         }
 
@@ -295,12 +293,9 @@
             }
 
             container.innerHTML = list.map((item, index) => {
-                const contentId = `content-${index}`;
-                const iconId = `icon-${index}`;
-
                 return `
                 <div class="cyber-card rounded-2xl p-5">
-                    <div class="flex justify-between items-start mb-2" onclick="toggleExpand('${contentId}')" style="cursor: pointer;">
+                    <div class="flex justify-between items-start mb-2" onclick="toggleExpand(${index})" style="cursor: pointer;">
                         <div>
                             <h3 class="text-lg font-bold text-white flex items-center">
                                 ${item.name}
@@ -310,7 +305,7 @@
                             </h3>
                             <p class="text-[10px] text-gray-500 mt-1 tech-font">${item.submitted_at}</p>
                         </div>
-                        <i data-lucide="chevron-down" id="${iconId}" class="w-5 h-5 text-indigo-400 transition-transform duration-300"></i>
+                        <i id="expand-icon-${index}" data-lucide="chevron-down" class="w-5 h-5 text-indigo-400 transition-transform duration-300"></i>
                     </div>
 
                     <div class="bg-black/20 p-3 rounded-lg border-l-2 border-cyan-500">
@@ -318,7 +313,7 @@
                         <p class="text-sm text-gray-300 leading-relaxed">${item.gain1}、${item.gain2}...</p>
                     </div>
 
-                    <div id="${contentId}" class="expand-content">
+                    <div id="expand-content-${index}" class="expand-content">
                         <div class="mt-4 pt-4 border-t border-indigo-500/20 space-y-4">
                             <div class="bg-black/20 p-3 rounded-lg border-l-2 border-cyan-500">
                                 <p class="text-xs text-cyan-400 font-bold mb-2">3个收获：</p>
