@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>教研反馈 - 深耕教研 共促成长</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+        body { font-family: 'Noto Sans SC', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 20px; box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37); }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .hidden-page { display: none; }
+    </style>
+</head>
+<body class="p-4 flex items-center justify-center">
+
+    <!-- 首页 (欢迎页) -->
+    <div id="home-page" class="glass w-full max-w-md p-8 text-center fade-in">
+        <div class="mb-6">
+            <span class="text-4xl">✨</span>
+        </div>
+        <h2 class="text-xl font-bold text-gray-800 mb-4">深耕教研，共促成长</h2>
+        <p class="text-gray-600 leading-relaxed mb-8">
+            感谢各位老师抽出时间参与本次教研，相信每一次交流都能碰撞出思维的火花，每一份思考都能助力教学的提升。接下来，诚邀您填写本次教研的收获与思考，留下您的宝贵见解～
+        </p>
+        <button onclick="showPage('form-page')" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg active:scale-95">
+            开始填写
+        </button>
+    </div>
+
+    <!-- 填写页面 -->
+    <div id="form-page" class="glass w-full max-w-md p-6 hidden-page fade-in">
+        <h2 class="text-lg font-bold text-gray-800 mb-6 border-l-4 border-indigo-500 pl-3">教研反馈表单</h2>
+        <form id="feedbackForm" class="space-y-6">
+            
+            <!-- 第1题：基本信息 -->
+            <div class="space-y-4">
+                <label class="block font-medium text-gray-700 font-bold">第1题：基本信息</label>
+                <input type="text" name="name" placeholder="姓名" required class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-400 outline-none">
+                <select name="subject" required class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-400 outline-none bg-white text-gray-600">
+                    <option value="" disabled selected>选择学科</option>
+                    <option>语文</option><option>数学</option><option>英语</option><option>历史</option>
+                    <option>思政</option><option>音乐</option><option>体育</option><option>计算机</option>
+                    <option>信息技术</option><option>工业机器人</option><option>电子商务</option>
+                    <option>数字媒体</option><option>法律事务</option><option>社区公共</option>
+                    <option>特勤训练</option>
+                </select>
+            </div>
+
+            <!-- 第2题：收获 -->
+            <div class="space-y-3">
+                <label class="block font-medium text-gray-700 font-bold">第2题：3个收获（最触动的点）</label>
+                <input type="text" name="gain1" placeholder="观点/技巧一" required class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-400 outline-none">
+                <input type="text" name="gain2" placeholder="观点/技巧二" required class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-400 outline-none">
+                <input type="text" name="gain3" placeholder="观点/技巧三" required class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-400 outline-none">
+            </div>
+
+            <!-- 第3题：应用 -->
+            <div class="space-y-3">
+                <label class="block font-medium text-gray-700 font-bold">第3题：2个应用（下周尝试的方法）</label>
+                <input type="text" name="apply1" placeholder="微改变：" required class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-400 outline-none">
+                <input type="text" name="apply2" placeholder="新做法：" required class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-400 outline-none">
+            </div>
+
+            <!-- 第4题：疑问 -->
+            <div class="space-y-3">
+                <label class="block font-medium text-gray-700 font-bold">第4题：1个疑问（想深入探究的问题）</label>
+                <textarea name="question" rows="3" placeholder="写下您的困惑..." required class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-400 outline-none"></textarea>
+            </div>
+
+            <!-- 第5题：核心素养 -->
+            <div class="space-y-3">
+                <label class="block font-medium text-gray-700 font-bold">第5题：思考你所教学科的核心素养是什么</label>
+                <textarea name="coreCompetence" rows="3" placeholder="请描述您所教学科的核心素养..." required class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-400 outline-none"></textarea>
+            </div>
+
+            <button type="submit" id="submitBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg active:scale-95">
+                提交反馈
+            </button>
+        </form>
+    </div>
+
+    <!-- 成功页面 -->
+    <div id="success-page" class="glass w-full max-w-md p-10 text-center hidden-page fade-in">
+        <div class="w-20 h-20 bg-green-100 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+            </svg>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-800 mb-2">提交成功！</h2>
+        <p class="text-indigo-600 font-medium mb-4">感谢您的智慧输出！</p>
+        <div class="bg-indigo-50 p-4 rounded-lg text-gray-600 text-sm leading-relaxed">
+            教务处会将大家的“金点子”整理成册，下次教研我们一起来检验落地成果！
+        </div>
+    </div>
+
+    <script>
+        // 页面切换逻辑
+        function showPage(pageId) {
+            document.getElementById('home-page').classList.add('hidden-page');
+            document.getElementById('form-page').classList.add('hidden-page');
+            document.getElementById('success-page').classList.add('hidden-page');
+            document.getElementById(pageId).classList.remove('hidden-page');
+            window.scrollTo(0, 0);
+        }
+
+        // 表单提交逻辑
+        const form = document.getElementById('feedbackForm');
+        const submitBtn = document.getElementById('submitBtn');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // 按钮加载状态
+            submitBtn.disabled = true;
+            submitBtn.innerText = "提交中...";
+            submitBtn.classList.replace('bg-indigo-600', 'bg-gray-400');
+
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+
+            try {
+                const response = await fetch('https://quickform.cn/api/dugy3wfywf', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    showPage('success-page');
+                } else {
+                    alert('提交失败，请稍后重试。');
+                    resetBtn();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                // 考虑到某些接口跨域限制，即便报错也建议根据实际需求引导
+                alert('提交过程中出现异常，请检查网络。');
+                resetBtn();
+            }
+        });
+
+        function resetBtn() {
+            submitBtn.disabled = false;
+            submitBtn.innerText = "提交反馈";
+            submitBtn.classList.replace('bg-gray-400', 'bg-indigo-600');
+        }
+    </script>
+</body>
+</html>

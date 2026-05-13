@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>教研数据实时大屏</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+SC:wght@300;400;700&display=swap');
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: radial-gradient(circle at top, #1a1a2e 0%, #0f0f1a 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        .cyber-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cyber-card::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, #6366f1, transparent);
+        }
+
+        .neon-text {
+            text-shadow: 0 0 10px rgba(99, 102, 241, 0.8);
+        }
+
+        .tech-font { font-family: 'Orbitron', sans-serif; }
+
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-content {
+            background: rgba(30, 41, 59, 0.95);
+            border: 1px solid rgba(99, 102, 241, 0.4);
+            box-shadow: 0 0 40px rgba(99, 102, 241, 0.3);
+        }
+
+        .expand-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .expand-content.active {
+            max-height: 1000px;
+        }
+    </style>
+</head>
+<body class="p-4 pb-24">
+
+    <header class="mb-6 text-center">
+        <h1 class="text-2xl font-bold tech-font neon-text tracking-widest mb-2">RESEARCH DATA HUB</h1>
+        <p class="text-indigo-400 text-sm opacity-80 italic">教研数据实时监控大屏</p>
+
+        <div class="grid grid-cols-2 gap-4 mt-6">
+            <div class="cyber-card rounded-xl p-3 text-center">
+                <p class="text-xs text-gray-400">总填写人数</p>
+                <p id="totalCount" class="text-2xl font-bold tech-font text-indigo-400">0</p>
+            </div>
+            <div class="cyber-card rounded-xl p-3 text-center">
+                <p class="text-xs text-gray-400">今日新增</p>
+                <p id="todayCount" class="text-2xl font-bold tech-font text-cyan-400">0</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 mt-4">
+            <div class="cyber-card rounded-xl p-3 text-center">
+                <p class="text-xs text-gray-400">涉及学科</p>
+                <p id="subjectCount" class="text-2xl font-bold tech-font text-emerald-400">0</p>
+            </div>
+            <div class="cyber-card rounded-xl p-3 text-center">
+                <p class="text-xs text-gray-400">参与教师</p>
+                <p id="teacherCount" class="text-2xl font-bold tech-font text-amber-400">0</p>
+            </div>
+        </div>
+    </header>
+
+    <div class="cyber-card rounded-2xl p-4 mb-6">
+        <h3 class="text-sm font-bold text-indigo-400 mb-4 flex items-center">
+            <i data-lucide="bar-chart-3" class="w-4 h-4 mr-2"></i>
+            学科提交分布
+        </h3>
+        <div class="relative h-48">
+            <canvas id="subjectChart"></canvas>
+        </div>
+    </div>
+
+    <div class="sticky top-4 z-40 mb-6 space-y-3">
+        <div class="relative flex gap-2">
+            <div class="relative flex-1">
+                <i data-lucide="search" class="absolute left-4 top-3.5 w-5 h-5 text-indigo-400"></i>
+                <input type="text" id="searchInput" placeholder="搜索教师姓名..."
+                    class="w-full bg-slate-900/80 border border-indigo-500/50 rounded-full py-3 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white placeholder-gray-500">
+            </div>
+            <button onclick="openUnsubmittedModal()" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-3 rounded-full flex items-center space-x-2 shadow-lg active:scale-95 transition-all text-sm font-bold whitespace-nowrap">
+                <i data-lucide="users" class="w-4 h-4"></i>
+                <span>未提交名单</span>
+            </button>
+        </div>
+        <select id="subjectFilter" onchange="filterData()" class="w-full bg-slate-900/80 border border-indigo-500/50 rounded-full py-3 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white appearance-none cursor-pointer">
+            <option value="">全部学科</option>
+            <option>语文</option><option>数学</option><option>英语</option><option>历史</option>
+            <option>思政</option><option>音乐</option><option>体育</option><option>计算机</option>
+            <option>信息技术</option><option>工业机器人</option><option>电子商务</option>
+            <option>数字媒体</option><option>法律事务</option><option>社区公共</option>
+            <option>特勤训练</option>
+        </select>
+    </div>
+
+    <main id="dataList" class="space-y-4">
+        <div class="animate-pulse flex flex-col space-y-4">
+            <div class="h-32 bg-slate-800 rounded-xl"></div>
+            <div class="h-32 bg-slate-800 rounded-xl"></div>
+        </div>
+    </main>
+
+    <div class="fixed bottom-6 left-4 right-4 flex justify-between items-center">
+        <button onclick="fetchData()" class="cyber-card rounded-full p-4 bg-indigo-600/20 active:scale-90 transition-transform">
+            <i data-lucide="refresh-cw" class="w-6 h-6 text-indigo-400"></i>
+        </button>
+
+        <div class="flex space-x-2">
+            <button onclick="exportData('xlsx')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded-xl flex items-center space-x-2 shadow-lg active:scale-95 transition-all text-sm font-bold">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                <span>导出 EXCEL</span>
+            </button>
+            <button onclick="exportData('csv')" class="bg-slate-800 border border-indigo-500/50 text-indigo-400 px-4 py-3 rounded-xl active:scale-95 transition-all text-sm font-bold">
+                CSV
+            </button>
+        </div>
+    </div>
+
+    <!-- 未提交教师名单模态窗口 -->
+    <div id="unsubmittedModal" class="fixed inset-0 z-50 hidden">
+        <div class="modal-overlay absolute inset-0" onclick="closeUnsubmittedModal()"></div>
+        <div class="absolute inset-4 flex items-center justify-center">
+            <div class="modal-content rounded-2xl w-full max-w-2xl max-h-full flex flex-col">
+                <div class="flex items-center justify-between p-4 border-b border-indigo-500/30">
+                    <h3 class="text-lg font-bold text-white flex items-center">
+                        <i data-lucide="user-x" class="w-5 h-5 mr-2 text-amber-400"></i>
+                        未提交教师名单
+                    </h3>
+                    <button onclick="closeUnsubmittedModal()" class="text-gray-400 hover:text-white transition-colors">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+                <div id="unsubmittedList" class="flex-1 overflow-y-auto p-4 space-y-4" style="max-height: calc(100vh - 160px);">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allSubmissions = [];
+        const apiUrl = 'https://quickform.cn/api/dugy3wfywf/all';
+        let subjectChart = null;
+
+        const teacherGroups = {
+            '公共科组': ['刘婷', '陈妙芬', '万佳欣', '曾萍', '武佳欣', '林思晓', '肖世珍', '王亮胜', '何坤青', '余静', '程晓慧', '谭翠', '吴佳钰', '江苗', '钟仪', '陈敏慧', '李奕蓉', '谭颖茵', '陈妍帆'],
+            '素养学科组': ['吴家佳', '郭素萍', '朱晓萍', '胡凤玲', '张珩', '叶家宝', '王春燕', '郑成', '黄海帆', '李彩鑫', '上官名监', '陈泽林'],
+            '计算机信息技术组': ['李晓冰', '郑春兰', '艾睿慧', '郑丽丽', '陈梓涛', '何琦琪', '陈秋燕', '胡旭妍', '方哲佳', '廖楚灵', '张洁冬', '王子波'],
+            '电商数媒机器人组': ['陈楚词', '林嘉伟', '彭志崇', '陈锐鹏', '詹培波', '金少清', '韩同成'],
+            '法律事务组': ['周思睿', '韦萌珊', '杜佳', '蔡梓然', '杨佳敏'],
+            '社区公共特勤训练组': ['林金蓉', '莫清妮', '钟新生', '刘创杰', '陈进', '李顺豪', '李治荣']
+        };
+
+        lucide.createIcons();
+
+        async function fetchData() {
+            try {
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+                allSubmissions = data.submissions;
+                updateStats(data);
+                updateChart();
+                renderList(allSubmissions);
+            } catch (error) {
+                console.error('Fetch Error:', error);
+                document.getElementById('dataList').innerHTML = `<p class="text-center text-red-400">数据加载失败</p>`;
+            }
+        }
+
+        function updateStats(data) {
+            document.getElementById('totalCount').innerText = data.total_submissions;
+            const today = new Date().toISOString().split('T')[0];
+            const todayCount = data.submissions.filter(s => s.submitted_at.includes(today)).length;
+            document.getElementById('todayCount').innerText = todayCount;
+
+            const uniqueSubjects = [...new Set(data.submissions.map(s => s.subject))];
+            document.getElementById('subjectCount').innerText = uniqueSubjects.length;
+
+            const uniqueTeachers = [...new Set(data.submissions.map(s => s.name))];
+            document.getElementById('teacherCount').innerText = uniqueTeachers.length;
+        }
+
+        function updateChart() {
+            const subjectStats = {};
+            allSubmissions.forEach(item => {
+                subjectStats[item.subject] = (subjectStats[item.subject] || 0) + 1;
+            });
+
+            const sortedSubjects = Object.entries(subjectStats).sort((a, b) => b[1] - a[1]);
+            const labels = sortedSubjects.map(s => s[0]);
+            const values = sortedSubjects.map(s => s[1]);
+
+            const ctx = document.getElementById('subjectChart').getContext('2d');
+
+            if (subjectChart) {
+                subjectChart.destroy();
+            }
+
+            subjectChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '提交数',
+                        data: values,
+                        backgroundColor: 'rgba(99, 102, 241, 0.6)',
+                        borderColor: 'rgba(99, 102, 241, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        barThickness: 20
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(30, 41, 59, 0.9)',
+                            titleColor: '#e2e8f0',
+                            bodyColor: '#e2e8f0',
+                            borderColor: 'rgba(99, 102, 241, 0.5)',
+                            borderWidth: 1
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#94a3b8', font: { size: 10 } },
+                            grid: { display: false },
+                            maxRotation: 45,
+                            minRotation: 45
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: { color: '#94a3b8', stepSize: 1 },
+                            grid: { color: 'rgba(99, 102, 241, 0.1)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function toggleExpand(contentId) {
+            const content = document.getElementById(contentId);
+            const iconId = contentId.replace('-content', '-icon');
+            const icon = document.getElementById(iconId);
+            
+            content.classList.toggle('active');
+            
+            if (icon) {
+                if (content.classList.contains('active')) {
+                    icon.style.transform = 'rotate(180deg)';
+                } else {
+                    icon.style.transform = 'rotate(0deg)';
+                }
+            }
+        }
+
+        function renderList(list) {
+            const container = document.getElementById('dataList');
+            if (list.length === 0) {
+                container.innerHTML = `<div class="text-center py-10 text-gray-500">未找到相关记录</div>`;
+                return;
+            }
+
+            container.innerHTML = list.map((item, index) => {
+                const contentId = `content-${index}`;
+                const iconId = `icon-${index}`;
+
+                return `
+                <div class="cyber-card rounded-2xl p-5">
+                    <div class="flex justify-between items-start mb-2" onclick="toggleExpand('${contentId}')" style="cursor: pointer;">
+                        <div>
+                            <h3 class="text-lg font-bold text-white flex items-center">
+                                ${item.name}
+                                <span class="ml-2 text-xs bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded border border-indigo-500/30 font-normal">
+                                    ${item.subject}
+                                </span>
+                            </h3>
+                            <p class="text-[10px] text-gray-500 mt-1 tech-font">${item.submitted_at}</p>
+                        </div>
+                        <i data-lucide="chevron-down" id="${iconId}" class="w-5 h-5 text-indigo-400 transition-transform duration-300"></i>
+                    </div>
+
+                    <div class="bg-black/20 p-3 rounded-lg border-l-2 border-cyan-500">
+                        <p class="text-xs text-cyan-400 font-bold mb-1">收获预览：</p>
+                        <p class="text-sm text-gray-300 leading-relaxed">${item.gain1}、${item.gain2}...</p>
+                    </div>
+
+                    <div id="${contentId}" class="expand-content">
+                        <div class="mt-4 pt-4 border-t border-indigo-500/20 space-y-4">
+                            <div class="bg-black/20 p-3 rounded-lg border-l-2 border-cyan-500">
+                                <p class="text-xs text-cyan-400 font-bold mb-2">3个收获：</p>
+                                <div class="space-y-2 text-sm text-gray-300">
+                                    <p><span class="text-cyan-300">观点一：</span>${item.gain1 || '未填写'}</p>
+                                    <p><span class="text-cyan-300">观点二：</span>${item.gain2 || '未填写'}</p>
+                                    <p><span class="text-cyan-300">观点三：</span>${item.gain3 || '未填写'}</p>
+                                </div>
+                            </div>
+
+                            <div class="bg-black/20 p-3 rounded-lg border-l-2 border-indigo-500">
+                                <p class="text-xs text-indigo-400 font-bold mb-2">2个应用：</p>
+                                <div class="space-y-2 text-sm text-gray-300">
+                                    <p><span class="text-indigo-300">微改变：</span>${item.apply1 || '未填写'}</p>
+                                    <p><span class="text-indigo-300">新做法：</span>${item.apply2 || '未填写'}</p>
+                                </div>
+                            </div>
+
+                            <div class="bg-black/20 p-3 rounded-lg border-l-2 border-amber-500">
+                                <p class="text-xs text-amber-400 font-bold mb-2">1个疑问：</p>
+                                <p class="text-sm text-gray-300 leading-relaxed">${item.question || '未填写'}</p>
+                            </div>
+
+                            ${item.coreCompetence ? `
+                            <div class="bg-black/20 p-3 rounded-lg border-l-2 border-emerald-500">
+                                <p class="text-xs text-emerald-400 font-bold mb-2">核心素养：</p>
+                                <p class="text-sm text-gray-300 leading-relaxed">${item.coreCompetence}</p>
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `}).join('');
+            lucide.createIcons();
+        }
+
+        function filterData() {
+            const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
+            const subject = document.getElementById('subjectFilter').value;
+
+            const filtered = allSubmissions.filter(item => {
+                const matchKeyword = keyword === '' ||
+                    item.name.toLowerCase().includes(keyword) ||
+                    item.subject.toLowerCase().includes(keyword);
+                const matchSubject = subject === '' || item.subject === subject;
+                return matchKeyword && matchSubject;
+            });
+            renderList(filtered);
+        }
+
+        document.getElementById('searchInput').addEventListener('input', filterData);
+
+        function getUnsubmittedTeachers() {
+            const submittedTeachers = new Set(allSubmissions.map(s => s.name));
+
+            const unsubmittedGroups = {};
+            let totalUnsubmitted = 0;
+
+            for (const [groupName, teachers] of Object.entries(teacherGroups)) {
+                const unsubmittedInGroup = teachers.filter(teacher => !submittedTeachers.has(teacher));
+                if (unsubmittedInGroup.length > 0) {
+                    unsubmittedGroups[groupName] = unsubmittedInGroup;
+                    totalUnsubmitted += unsubmittedInGroup.length;
+                }
+            }
+
+            return { groups: unsubmittedGroups, total: totalUnsubmitted };
+        }
+
+        function openUnsubmittedModal() {
+            const modal = document.getElementById('unsubmittedModal');
+            const listContainer = document.getElementById('unsubmittedList');
+
+            const { groups, total } = getUnsubmittedTeachers();
+
+            if (total === 0) {
+                listContainer.innerHTML = `
+                    <div class="text-center py-10">
+                        <i data-lucide="check-circle" class="w-16 h-16 text-emerald-400 mx-auto mb-4"></i>
+                        <p class="text-lg text-emerald-400 font-bold">太棒了！</p>
+                        <p class="text-gray-400 mt-2">所有教师均已提交反馈</p>
+                    </div>
+                `;
+            } else {
+                let html = `<p class="text-amber-400 text-sm mb-4">共 <span class="font-bold">${total}</span> 位教师未提交</p>`;
+
+                for (const [groupName, teachers] of Object.entries(groups)) {
+                    html += `
+                        <div class="bg-slate-800/50 rounded-xl p-4">
+                            <h4 class="text-indigo-400 font-bold text-sm mb-3 flex items-center">
+                                <i data-lucide="folder" class="w-4 h-4 mr-2"></i>
+                                ${groupName}
+                                <span class="ml-2 text-xs text-gray-500">(${teachers.length}人)</span>
+                            </h4>
+                            <div class="flex flex-wrap gap-2">
+                                ${teachers.map(teacher => `
+                                    <span class="bg-amber-500/20 text-amber-400 px-3 py-1 rounded-full text-sm border border-amber-500/30">
+                                        ${teacher}
+                                    </span>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                listContainer.innerHTML = html;
+            }
+
+            modal.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeUnsubmittedModal() {
+            document.getElementById('unsubmittedModal').classList.add('hidden');
+        }
+
+        function exportData(format) {
+            if (allSubmissions.length === 0) return alert('暂无数据可导出');
+
+            const exportData = allSubmissions.map(item => ({
+                '教师姓名': item.name,
+                '所属学科': item.subject,
+                '收获1': item.gain1,
+                '收获2': item.gain2,
+                '收获3': item.gain3,
+                '微改变': item.apply1,
+                '新做法': item.apply2,
+                '疑问': item.question,
+                '核心素养': item.coreCompetence || '',
+                '提交时间': item.submitted_at
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "教研反馈");
+
+            if (format === 'xlsx') {
+                XLSX.writeFile(wb, `教研反馈数据_${new Date().getTime()}.xlsx`);
+            } else {
+                XLSX.writeFile(wb, `教研反馈数据_${new Date().getTime()}.csv`, { bookType: 'csv' });
+            }
+        }
+
+        fetchData();
+    </script>
+</body>
+</html>
