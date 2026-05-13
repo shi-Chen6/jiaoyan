@@ -68,73 +68,76 @@
         }
     </style>
 </head>
-<body class="p-4 pb-24">
+<body class="p-4 md:p-8 pb-24 max-w-[1600px] mx-auto">
 
-    <header class="mb-6 text-center">
-        <h1 class="text-2xl font-bold tech-font neon-text tracking-widest mb-2">RESEARCH DATA HUB</h1>
-        <p class="text-indigo-400 text-sm opacity-80 italic">教研数据实时监控大屏</p>
+    <header class="mb-8 text-center">
+        <h1 class="text-3xl md:text-4xl font-bold tech-font neon-text tracking-widest mb-2 mt-4">RESEARCH DATA HUB</h1>
+        <p class="text-indigo-400 text-base md:text-lg opacity-80 italic">教研数据实时监控大屏</p>
 
-        <div class="grid grid-cols-2 gap-4 mt-6">
-            <div class="cyber-card rounded-xl p-3 text-center">
-                <p class="text-xs text-gray-400">总填写人数</p>
-                <p id="totalCount" class="text-2xl font-bold tech-font text-indigo-400">0</p>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+            <div class="cyber-card rounded-xl p-4 md:p-6 text-center">
+                <p class="text-sm md:text-base text-gray-400 mb-2">总填写人数</p>
+                <p id="totalCount" class="text-3xl md:text-5xl font-bold tech-font text-indigo-400">0</p>
             </div>
-            <div class="cyber-card rounded-xl p-3 text-center">
-                <p class="text-xs text-gray-400">今日新增</p>
-                <p id="todayCount" class="text-2xl font-bold tech-font text-cyan-400">0</p>
+            <div class="cyber-card rounded-xl p-4 md:p-6 text-center">
+                <p class="text-sm md:text-base text-gray-400 mb-2">今日新增</p>
+                <p id="todayCount" class="text-3xl md:text-5xl font-bold tech-font text-cyan-400">0</p>
             </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-4 mt-4">
-            <div class="cyber-card rounded-xl p-3 text-center">
-                <p class="text-xs text-gray-400">涉及学科</p>
-                <p id="subjectCount" class="text-2xl font-bold tech-font text-emerald-400">0</p>
+            <div class="cyber-card rounded-xl p-4 md:p-6 text-center">
+                <p class="text-sm md:text-base text-gray-400 mb-2">涉及学科</p>
+                <p id="subjectCount" class="text-3xl md:text-5xl font-bold tech-font text-emerald-400">0</p>
             </div>
-            <div class="cyber-card rounded-xl p-3 text-center">
-                <p class="text-xs text-gray-400">参与教师</p>
-                <p id="teacherCount" class="text-2xl font-bold tech-font text-amber-400">0</p>
+            <div class="cyber-card rounded-xl p-4 md:p-6 text-center">
+                <p class="text-sm md:text-base text-gray-400 mb-2">参与教师</p>
+                <p id="teacherCount" class="text-3xl md:text-5xl font-bold tech-font text-amber-400">0</p>
             </div>
         </div>
     </header>
 
-    <div class="cyber-card rounded-2xl p-4 mb-6">
-        <h3 class="text-sm font-bold text-indigo-400 mb-4 flex items-center">
-            <i data-lucide="bar-chart-3" class="w-4 h-4 mr-2"></i>
-            学科提交分布
-        </h3>
-        <div class="relative h-48">
-            <canvas id="subjectChart"></canvas>
-        </div>
-    </div>
-
-    <div class="sticky top-4 z-40 mb-6 space-y-3">
-        <div class="relative flex gap-2">
-            <div class="relative flex-1">
-                <i data-lucide="search" class="absolute left-4 top-3.5 w-5 h-5 text-indigo-400"></i>
-                <input type="text" id="searchInput" placeholder="搜索教师姓名..."
-                    class="w-full bg-slate-900/80 border border-indigo-500/50 rounded-full py-3 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white placeholder-gray-500">
+    <div class="lg:flex lg:gap-8 lg:items-start">
+        <div class="lg:w-1/3 lg:sticky lg:top-8 z-30">
+            <div class="cyber-card rounded-2xl p-4 md:p-6 mb-6">
+                <h3 class="text-base md:text-lg font-bold text-indigo-400 mb-4 flex items-center">
+                    <i data-lucide="bar-chart-3" class="w-5 h-5 mr-2"></i>
+                    学科提交分布
+                </h3>
+                <div class="relative h-48 md:h-64">
+                    <canvas id="subjectChart"></canvas>
+                </div>
             </div>
-            <button onclick="openUnsubmittedModal()" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-3 rounded-full flex items-center space-x-2 shadow-lg active:scale-95 transition-all text-sm font-bold whitespace-nowrap">
-                <i data-lucide="users" class="w-4 h-4"></i>
-                <span>未提交名单</span>
-            </button>
-        </div>
-        <select id="subjectFilter" onchange="filterData()" class="w-full bg-slate-900/80 border border-indigo-500/50 rounded-full py-3 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white appearance-none cursor-pointer">
-            <option value="">全部学科</option>
-            <option>语文</option><option>数学</option><option>英语</option><option>历史</option>
-            <option>思政</option><option>音乐</option><option>体育</option><option>计算机</option>
-            <option>信息技术</option><option>工业机器人</option><option>电子商务</option>
-            <option>数字媒体</option><option>法律事务</option><option>社区公共</option>
-            <option>特勤训练</option>
-        </select>
-    </div>
 
-    <main id="dataList" class="space-y-4">
-        <div class="animate-pulse flex flex-col space-y-4">
-            <div class="h-32 bg-slate-800 rounded-xl"></div>
-            <div class="h-32 bg-slate-800 rounded-xl"></div>
+            <div class="sticky top-4 lg:static z-40 mb-6 space-y-4">
+                <div class="relative flex gap-3">
+                    <div class="relative flex-1">
+                        <i data-lucide="search" class="absolute left-4 top-3.5 w-5 h-5 text-indigo-400"></i>
+                        <input type="text" id="searchInput" placeholder="搜索教师姓名..."
+                            class="w-full bg-slate-900/80 border border-indigo-500/50 rounded-full py-3 md:py-4 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white placeholder-gray-500 text-sm md:text-base">
+                    </div>
+                    <button onclick="openUnsubmittedModal()" class="bg-amber-600 hover:bg-amber-700 text-white px-5 py-3 md:py-4 rounded-full flex items-center space-x-2 shadow-lg active:scale-95 transition-all text-sm md:text-base font-bold whitespace-nowrap">
+                        <i data-lucide="users" class="w-5 h-5"></i>
+                        <span>未提交名单</span>
+                    </button>
+                </div>
+                <select id="subjectFilter" onchange="filterData()" class="w-full bg-slate-900/80 border border-indigo-500/50 rounded-full py-3 md:py-4 px-5 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white appearance-none cursor-pointer text-sm md:text-base">
+                    <option value="">全部学科</option>
+                    <option>语文</option><option>数学</option><option>英语</option><option>历史</option>
+                    <option>思政</option><option>音乐</option><option>体育</option><option>计算机</option>
+                    <option>信息技术</option><option>工业机器人</option><option>电子商务</option>
+                    <option>数字媒体</option><option>法律事务</option><option>社区公共</option>
+                    <option>特勤训练</option>
+                </select>
+            </div>
         </div>
-    </main>
+
+        <div class="lg:w-2/3 w-full mt-6 lg:mt-0">
+            <main id="dataList" class="space-y-4 md:space-y-6">
+                <div class="animate-pulse flex flex-col space-y-4">
+                    <div class="h-32 md:h-40 bg-slate-800 rounded-xl"></div>
+                    <div class="h-32 md:h-40 bg-slate-800 rounded-xl"></div>
+                </div>
+            </main>
+        </div>
+    </div>
 
     <div class="fixed bottom-6 left-4 right-4 flex justify-between items-center">
         <button onclick="fetchData()" class="cyber-card rounded-full p-4 bg-indigo-600/20 active:scale-90 transition-transform">
@@ -146,6 +149,10 @@
                 <i data-lucide="download" class="w-4 h-4"></i>
                 <span>导出 EXCEL</span>
             </button>
+            <button onclick="exportData('doc')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-4 rounded-xl flex items-center space-x-2 shadow-lg active:scale-95 transition-all text-sm font-bold">
+                <i data-lucide="file-text" class="w-4 h-4"></i>
+                <span>WORD</span>
+            </button>
             <button onclick="exportData('csv')" class="bg-slate-800 border border-indigo-500/50 text-indigo-400 px-4 py-3 rounded-xl active:scale-95 transition-all text-sm font-bold">
                 CSV
             </button>
@@ -154,18 +161,18 @@
 
     <div id="unsubmittedModal" class="fixed inset-0 z-50 hidden">
         <div class="modal-overlay absolute inset-0" onclick="closeUnsubmittedModal()"></div>
-        <div class="absolute inset-4 flex items-center justify-center">
-            <div class="modal-content rounded-2xl w-full max-w-2xl max-h-full flex flex-col">
-                <div class="flex items-center justify-between p-4 border-b border-indigo-500/30">
-                    <h3 class="text-lg font-bold text-white flex items-center">
-                        <i data-lucide="user-x" class="w-5 h-5 mr-2 text-amber-400"></i>
+        <div class="absolute inset-4 md:inset-10 flex items-center justify-center">
+            <div class="modal-content rounded-2xl w-full max-w-2xl md:max-w-4xl lg:max-w-6xl max-h-full flex flex-col shadow-2xl">
+                <div class="flex items-center justify-between p-4 md:p-6 border-b border-indigo-500/30">
+                    <h3 class="text-lg md:text-2xl font-bold text-white flex items-center tracking-wide">
+                        <i data-lucide="user-x" class="w-6 h-6 md:w-8 md:h-8 mr-3 text-amber-400"></i>
                         未提交教师名单
                     </h3>
                     <button onclick="closeUnsubmittedModal()" class="text-gray-400 hover:text-white transition-colors">
-                        <i data-lucide="x" class="w-6 h-6"></i>
+                        <i data-lucide="x" class="w-6 h-6 md:w-8 md:h-8"></i>
                     </button>
                 </div>
-                <div id="unsubmittedList" class="flex-1 overflow-y-auto p-4 space-y-4" style="max-height: calc(100vh - 160px);">
+                <div id="unsubmittedList" class="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 md:space-y-6" style="max-height: calc(100vh - 120px);">
                 </div>
             </div>
         </div>
@@ -187,17 +194,24 @@
 
         lucide.createIcons();
 
-        async function fetchData() {
+        let isModalOpen = false;
+
+        async function fetchData(silent = false) {
             try {
                 const response = await fetch(apiUrl);
                 const data = await response.json();
                 allSubmissions = data.submissions;
                 updateStats(data);
                 updateChart();
-                renderList(allSubmissions);
+                filterData();
+                if (isModalOpen) {
+                    renderUnsubmittedList();
+                }
             } catch (error) {
                 console.error('Fetch Error:', error);
-                document.getElementById('dataList').innerHTML = `<p class="text-center text-red-400">数据加载失败</p>`;
+                if (!silent) {
+                    document.getElementById('dataList').innerHTML = `<p class="text-center text-red-400">数据加载失败</p>`;
+                }
             }
         }
 
@@ -383,34 +397,33 @@
             return { groups: unsubmittedGroups, total: totalUnsubmitted };
         }
 
-        function openUnsubmittedModal() {
-            const modal = document.getElementById('unsubmittedModal');
+        function renderUnsubmittedList() {
             const listContainer = document.getElementById('unsubmittedList');
-
             const { groups, total } = getUnsubmittedTeachers();
 
             if (total === 0) {
                 listContainer.innerHTML = `
-                    <div class="text-center py-10">
-                        <i data-lucide="check-circle" class="w-16 h-16 text-emerald-400 mx-auto mb-4"></i>
-                        <p class="text-lg text-emerald-400 font-bold">太棒了！</p>
-                        <p class="text-gray-400 mt-2">所有教师均已提交反馈</p>
+                    <div class="text-center py-10 md:py-20">
+                        <i data-lucide="check-circle" class="w-16 h-16 md:w-24 md:h-24 text-emerald-400 mx-auto mb-4 md:mb-6"></i>
+                        <p class="text-xl md:text-3xl text-emerald-400 font-bold tracking-wide mt-2 md:mt-4">所有教师均已提交反馈</p>
                     </div>
                 `;
             } else {
-                let html = `<p class="text-amber-400 text-sm mb-4">共 <span class="font-bold">${total}</span> 位教师未提交</p>`;
+                let html = `<p class="text-amber-400 text-base md:text-xl mb-4 md:mb-6 font-bold">共 <span class="text-2xl md:text-3xl mx-1">${total}</span> 位教师未提交</p>`;
+
+                html += `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">`;
 
                 for (const [groupName, teachers] of Object.entries(groups)) {
                     html += `
-                        <div class="bg-slate-800/50 rounded-xl p-4">
-                            <h4 class="text-indigo-400 font-bold text-sm mb-3 flex items-center">
-                                <i data-lucide="folder" class="w-4 h-4 mr-2"></i>
+                        <div class="bg-slate-800/50 rounded-xl p-4 md:p-6 border border-slate-700/50 hover:border-indigo-500/50 transition-colors">
+                            <h4 class="text-indigo-400 font-bold text-base md:text-lg mb-4 flex items-center">
+                                <i data-lucide="folder" class="w-5 h-5 md:w-6 md:h-6 mr-2"></i>
                                 ${groupName}
-                                <span class="ml-2 text-xs text-gray-500">(${teachers.length}人)</span>
+                                <span class="ml-2 text-sm text-gray-500 font-normal">(${teachers.length}人)</span>
                             </h4>
-                            <div class="flex flex-wrap gap-2">
+                            <div class="flex flex-wrap gap-2 md:gap-3">
                                 ${teachers.map(teacher => `
-                                    <span class="bg-amber-500/20 text-amber-400 px-3 py-1 rounded-full text-sm border border-amber-500/30">
+                                    <span class="bg-amber-500/10 text-amber-400 px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-sm md:text-base border border-amber-500/20 font-medium tracking-wide">
                                         ${teacher}
                                     </span>
                                 `).join('')}
@@ -419,19 +432,56 @@
                     `;
                 }
 
+                html += `</div>`;
                 listContainer.innerHTML = html;
             }
-
-            modal.classList.remove('hidden');
             lucide.createIcons();
         }
 
+        function openUnsubmittedModal() {
+            isModalOpen = true;
+            const modal = document.getElementById('unsubmittedModal');
+            renderUnsubmittedList();
+            modal.classList.remove('hidden');
+        }
+
         function closeUnsubmittedModal() {
+            isModalOpen = false;
             document.getElementById('unsubmittedModal').classList.add('hidden');
         }
 
         function exportData(format) {
             if (allSubmissions.length === 0) return alert('暂无数据可导出');
+
+            if (format === 'doc') {
+                let html = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>教研反馈</title></head><body>";
+                html += "<h2 style='text-align: center; font-family: sans-serif;'>教研反馈汇总</h2>";
+                allSubmissions.forEach(item => {
+                    html += `<h3 style='font-family: sans-serif; border-bottom: 1px solid #ccc; padding-bottom: 5px;'>${item.name} - ${item.subject} <span style='font-size: 12px; color: #666;'>(${item.submitted_at})</span></h3>`;
+                    html += `<ul style='font-family: sans-serif; line-height: 1.6;'>`;
+                    html += `<li><b>收获1：</b>${item.gain1 || ''}</li>`;
+                    html += `<li><b>收获2：</b>${item.gain2 || ''}</li>`;
+                    html += `<li><b>收获3：</b>${item.gain3 || ''}</li>`;
+                    html += `<li><b>微改变：</b>${item.apply1 || ''}</li>`;
+                    html += `<li><b>新做法：</b>${item.apply2 || ''}</li>`;
+                    html += `<li><b>疑问：</b>${item.question || ''}</li>`;
+                    if (item.coreCompetence) html += `<li><b>核心素养：</b>${item.coreCompetence}</li>`;
+                    html += `</ul><br/>`;
+                });
+                html += "</body></html>";
+                
+                const blob = new Blob(['\ufeff', html], { type: 'application/msword;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `教研反馈数据_${new Date().getTime()}.doc`;
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                return;
+            }
 
             const exportData = allSubmissions.map(item => ({
                 '教师姓名': item.name,
@@ -458,6 +508,7 @@
         }
 
         fetchData();
+        setInterval(() => fetchData(true), 10000);
     </script>
 </body>
 </html>
