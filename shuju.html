@@ -1127,7 +1127,7 @@
         }
         @media (min-width: 768px) {
             .app-container {
-                max-width: 760px;
+                max-width: 90%;
                 padding: 20px 28px 40px;
                 gap: 18px;
             }
@@ -1148,6 +1148,37 @@
                 font-size: 0.68rem;
             }
             .data-table td {
+                padding: 12px 10px;
+                max-width: 250px;
+            }
+        }
+        @media (min-width: 1024px) {
+            .app-container {
+                max-width: 95%;
+                padding: 24px 32px 48px;
+                gap: 24px;
+            }
+            .header-title {
+                font-size: 2rem;
+            }
+            .stat-card .stat-icon {
+                font-size: 2rem;
+            }
+            .stat-card .stat-value {
+                font-size: 2.6rem;
+            }
+            .data-table {
+                font-size: 0.85rem;
+            }
+            .data-table th {
+                font-size: 0.75rem;
+                padding: 16px 12px;
+            }
+            .data-table td {
+                padding: 16px 12px;
+                max-width: 400px;
+            }
+        }
                 padding: 12px 10px;
             }
         }
@@ -2176,7 +2207,9 @@
             });
 
             // ============ 未提交教师弹窗 ============
-            function showUnsubmittedModal() {
+            let unsubmittedRefreshTimer = null;
+
+            function updateUnsubmittedList() {
                 const submittedNames = new Set(allSubmissions.map(s => s.name).filter(Boolean));
                 
                 const unsubmittedByGroup = allTeachersByGroup.map(groupData => ({
@@ -2202,8 +2235,26 @@
                 if (unsubmittedTeachers.length === 0) {
                     teacherList.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 20px;">🎉 所有教师均已提交！</div>';
                 }
+            }
 
+            function showUnsubmittedModal() {
+                updateUnsubmittedList();
                 unsubmittedModal.classList.add('show');
+                
+                if (unsubmittedRefreshTimer) clearInterval(unsubmittedRefreshTimer);
+                unsubmittedRefreshTimer = setInterval(() => {
+                    fetchData().then(() => {
+                        updateUnsubmittedList();
+                    });
+                }, 10000); // 10秒自动刷新
+            }
+
+            function closeUnsubmittedModal() {
+                unsubmittedModal.classList.remove('show');
+                if (unsubmittedRefreshTimer) {
+                    clearInterval(unsubmittedRefreshTimer);
+                    unsubmittedRefreshTimer = null;
+                }
             }
 
             btnUnsubmitted.addEventListener('click', () => {
@@ -2211,12 +2262,12 @@
             });
 
             modalClose.addEventListener('click', () => {
-                unsubmittedModal.classList.remove('show');
+                closeUnsubmittedModal();
             });
 
             unsubmittedModal.addEventListener('click', (e) => {
                 if (e.target === unsubmittedModal) {
-                    unsubmittedModal.classList.remove('show');
+                    closeUnsubmittedModal();
                 }
             });
 
