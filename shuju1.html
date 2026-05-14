@@ -3,512 +3,2635 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>教研数据实时大屏</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>华南司法职业学校教研会 - 数据大屏</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+SC:wght@300;400;700&display=swap');
-
-        body {
-            font-family: 'Noto Sans SC', sans-serif;
-            background: radial-gradient(circle at top, #1a1a2e 0%, #0f0f1a 100%);
-            color: #e2e8f0;
-            min-height: 100vh;
+        :root {
+            --bg-primary: #080d24;
+            --bg-panel: #0d1533;
+            --bg-card: #111b3d;
+            --border-glow: #1a3a6b;
+            --border-bright: #2a5db0;
+            --accent-cyan: #00d4ff;
+            --accent-blue: #4a9eff;
+            --accent-purple: #8b5cf6;
+            --accent-gold: #f0c060;
+            --accent-green: #34d399;
+            --accent-red: #f87171;
+            --accent-orange: #fb923c;
+            --text-primary: #e2e8f0;
+            --text-secondary: #a0b8d4;
+            --text-dim: #6b7d99;
+            --glow-cyan: 0 0 18px rgba(0, 212, 255, 0.35);
+            --glow-blue: 0 0 16px rgba(74, 158, 255, 0.3);
+            --glow-purple: 0 0 14px rgba(139, 92, 246, 0.3);
+            --radius-sm: 8px;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+            --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-smooth: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .cyber-card {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(99, 102, 241, 0.3);
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            letter-spacing: 0.02em;
+            background-image:
+                radial-gradient(ellipse at 15% 20%, rgba(0, 180, 240, 0.06) 0%, transparent 55%),
+                radial-gradient(ellipse at 75% 65%, rgba(100, 80, 240, 0.05) 0%, transparent 55%),
+                radial-gradient(ellipse at 40% 85%, rgba(0, 200, 180, 0.04) 0%, transparent 50%);
+        }
+
+        /* 背景网格线 */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            background-image:
+                linear-gradient(rgba(30, 55, 100, 0.12) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(30, 55, 100, 0.12) 1px, transparent 1px);
+            background-size: 48px 48px;
+            mask-image: radial-gradient(ellipse at center, black 30%, transparent 70%);
+            -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 70%);
+        }
+
+        /* 全局滚动条 */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(100, 140, 200, 0.35);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(130, 170, 230, 0.55);
+        }
+
+        /* ============ 主容器 ============ */
+        .dashboard {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            padding: 10px 14px;
+            gap: 10px;
+            max-width: 1920px;
+            margin: 0 auto;
+        }
+
+        /* ============ 顶部导航栏 ============ */
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 12px 20px;
+            background: var(--bg-panel);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-glow);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.02);
+            flex-shrink: 0;
             position: relative;
             overflow: hidden;
         }
-
-        .cyber-card::after {
+        .header::after {
             content: '';
             position: absolute;
-            top: 0; left: 0; width: 100%; height: 2px;
-            background: linear-gradient(90deg, transparent, #6366f1, transparent);
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 1.5px;
+            background: linear-gradient(90deg, transparent, var(--accent-cyan), var(--accent-blue), var(--accent-purple), transparent);
+            opacity: 0.7;
         }
-
-        .neon-text {
-            text-shadow: 0 0 10px rgba(99, 102, 241, 0.8);
+        .header-title {
+            font-size: 1.35rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            white-space: nowrap;
+            background: linear-gradient(135deg, #e0f0ff 0%, #80c8ff 40%, #c0dfff 70%, #e0f0ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: none;
+            flex-shrink: 0;
+            margin-right: 8px;
         }
-
-        .tech-font { font-family: 'Orbitron', sans-serif; }
-
-        ::-webkit-scrollbar { width: 0px; background: transparent; }
-
-        .modal-overlay {
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(4px);
+        .header-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+            animation: pulse-icon 2.5s ease-in-out infinite;
         }
-
-        .modal-content {
-            background: rgba(30, 41, 59, 0.95);
-            border: 1px solid rgba(99, 102, 241, 0.4);
-            box-shadow: 0 0 40px rgba(99, 102, 241, 0.3);
+        @keyframes pulse-icon {
+            0%,
+            100% {
+                filter: drop-shadow(0 0 6px rgba(0, 212, 255, 0.6));
+            }
+            50% {
+                filter: drop-shadow(0 0 16px rgba(0, 212, 255, 1));
+            }
         }
-
-        .expand-content {
-            max-height: 0;
+        .header-stats {
+            display: flex;
+            gap: 18px;
+            margin-left: auto;
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+        .header-stat-item {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+        .header-stat-value {
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: var(--accent-cyan);
+            text-shadow: var(--glow-cyan);
+            min-width: 28px;
+            text-align: center;
+        }
+        .header-stat-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            box-shadow: 0 0 10px var(--accent-green);
+            animation: blink-dot 2s ease-in-out infinite;
+        }
+        @keyframes blink-dot {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.35;
+            }
+        }
+        .search-box {
+            display: flex;
+            align-items: center;
+            background: rgba(20, 35, 65, 0.7);
+            border: 1px solid var(--border-glow);
+            border-radius: 24px;
+            padding: 7px 16px;
+            gap: 8px;
+            transition: var(--transition-smooth);
+            flex-shrink: 0;
+            min-width: 180px;
+        }
+        .search-box:focus-within {
+            border-color: var(--accent-cyan);
+            box-shadow: var(--glow-cyan);
+            background: rgba(25, 42, 75, 0.85);
+        }
+        .search-box input {
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            outline: none;
+            width: 140px;
+            letter-spacing: 0.03em;
+        }
+        .search-box input::placeholder {
+            color: var(--text-dim);
+        }
+        .search-icon {
+            color: var(--text-dim);
+            font-size: 0.95rem;
+            flex-shrink: 0;
+        }
+        .filter-select {
+            background: rgba(20, 35, 65, 0.7);
+            border: 1px solid var(--border-glow);
+            border-radius: 24px;
+            padding: 7px 14px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            outline: none;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: var(--transition-smooth);
+            letter-spacing: 0.03em;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2388aacc' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 32px;
+        }
+        .filter-select:focus {
+            border-color: var(--accent-cyan);
+            box-shadow: var(--glow-cyan);
+        }
+        .filter-select option {
+            background: var(--bg-panel);
+            color: var(--text-primary);
+        }
+        .btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 24px;
+            border: 1px solid var(--border-bright);
+            cursor: pointer;
+            font-size: 0.88rem;
+            font-weight: 500;
+            letter-spacing: 0.03em;
+            transition: var(--transition-fast);
+            white-space: nowrap;
+            flex-shrink: 0;
+            font-family: inherit;
+            position: relative;
             overflow: hidden;
-            transition: max-height 0.3s ease-out;
+        }
+        .btn-outline {
+            background: rgba(20, 40, 70, 0.5);
+            color: var(--text-primary);
+            border-color: var(--border-glow);
+        }
+        .btn-outline:hover {
+            background: rgba(30, 55, 95, 0.7);
+            border-color: var(--accent-cyan);
+            box-shadow: var(--glow-cyan);
+            transform: translateY(-1px);
+        }
+        .btn-accent {
+            background: linear-gradient(135deg, rgba(0, 180, 240, 0.2), rgba(74, 130, 240, 0.25));
+            color: #fff;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 12px rgba(0, 200, 255, 0.2);
+        }
+        .btn-accent:hover {
+            background: linear-gradient(135deg, rgba(0, 200, 255, 0.35), rgba(90, 150, 255, 0.4));
+            box-shadow: 0 0 22px rgba(0, 210, 255, 0.4);
+            transform: translateY(-1px);
+        }
+        .btn-danger {
+            background: rgba(200, 50, 50, 0.2);
+            color: #fca5a5;
+            border-color: rgba(248, 113, 113, 0.5);
+        }
+        .btn-danger:hover {
+            background: rgba(220, 60, 60, 0.35);
+            box-shadow: 0 0 16px rgba(248, 113, 113, 0.35);
+        }
+        .btn .badge {
+            background: var(--accent-red);
+            color: #fff;
+            border-radius: 50%;
+            min-width: 22px;
+            height: 22px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0 5px;
+            animation: badge-pulse 2s ease-in-out infinite;
+        }
+        @keyframes badge-pulse {
+            0%,
+            100% {
+                box-shadow: 0 0 6px rgba(248, 113, 113, 0.5);
+            }
+            50% {
+                box-shadow: 0 0 16px rgba(248, 113, 113, 0.9);
+            }
+        }
+        .btn-fullscreen {
+            background: rgba(30, 50, 80, 0.5);
+            border: 1px solid var(--border-glow);
+            color: var(--text-secondary);
+            padding: 8px 12px;
+            border-radius: 50%;
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            flex-shrink: 0;
+            font-size: 1.1rem;
+        }
+        .btn-fullscreen:hover {
+            color: var(--accent-cyan);
+            border-color: var(--accent-cyan);
+            box-shadow: var(--glow-cyan);
         }
 
-        .expand-content.active {
-            max-height: 1000px;
+        /* ============ 主体内容区 ============ */
+        .main-content {
+            display: flex;
+            gap: 12px;
+            flex: 1;
+            min-height: 0;
         }
 
-        .icon-rotate {
-            transition: transform 0.3s ease;
+        /* ============ 左侧面板 ============ */
+        .panel-left {
+            width: 280px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .panel-card {
+            background: var(--bg-panel);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-glow);
+            padding: 16px 18px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+            position: relative;
+            overflow: hidden;
+            transition: var(--transition-smooth);
+        }
+        .panel-card:hover {
+            border-color: rgba(100, 160, 220, 0.5);
+            box-shadow: 0 6px 28px rgba(0, 0, 0, 0.35);
+        }
+        .panel-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(100, 170, 230, 0.5), transparent);
+            opacity: 0.6;
+        }
+        .panel-card-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            letter-spacing: 0.05em;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            text-transform: uppercase;
+        }
+        .panel-card-title .dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--accent-cyan);
+            box-shadow: 0 0 8px var(--accent-cyan);
+            flex-shrink: 0;
+        }
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .stat-item {
+            background: rgba(15, 28, 55, 0.6);
+            border-radius: var(--radius-sm);
+            padding: 12px;
+            text-align: center;
+            border: 1px solid rgba(40, 70, 120, 0.4);
+            transition: var(--transition-fast);
+        }
+        .stat-item:hover {
+            border-color: rgba(80, 140, 200, 0.6);
+            background: rgba(20, 38, 68, 0.75);
+        }
+        .stat-value {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            text-shadow: var(--glow-cyan);
+            line-height: 1;
+        }
+        .stat-label {
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            margin-top: 4px;
+            letter-spacing: 0.04em;
+        }
+        .chart-wrap {
+            position: relative;
+            width: 100%;
+            height: 200px;
+        }
+        .chart-wrap canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        /* ============ 中间卡片区域 ============ */
+        .panel-center {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-width: 0;
+        }
+        .cards-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 4px;
+            flex-shrink: 0;
+        }
+        .cards-header span {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            letter-spacing: 0.04em;
+        }
+        .cards-count {
+            color: var(--accent-cyan) !important;
+            font-weight: 600;
+        }
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            overflow-y: auto;
+            flex: 1;
+            padding-right: 4px;
+            align-content: start;
+        }
+        .teacher-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-md);
+            padding: 16px 18px;
+            border: 1px solid rgba(40, 70, 120, 0.45);
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-height: 100px;
+        }
+        .teacher-card:hover {
+            border-color: var(--accent-cyan);
+            box-shadow: var(--glow-cyan), 0 8px 28px rgba(0, 0, 0, 0.4);
+            transform: translateY(-3px);
+            background: #131e42;
+        }
+        .teacher-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 3px;
+            height: 100%;
+            background: linear-gradient(180deg, var(--accent-cyan), var(--accent-purple));
+            opacity: 0;
+            transition: var(--transition-smooth);
+            border-radius: 0 3px 3px 0;
+        }
+        .teacher-card:hover::after {
+            opacity: 1;
+        }
+        .card-name {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 0.04em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .card-subject-tag {
+            display: inline-block;
+            background: rgba(74, 158, 255, 0.2);
+            color: var(--accent-blue);
+            padding: 3px 10px;
+            border-radius: 14px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            letter-spacing: 0.03em;
+            width: fit-content;
+            border: 1px solid rgba(74, 158, 255, 0.3);
+        }
+        .card-time {
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            letter-spacing: 0.03em;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .card-click-hint {
+            font-size: 0.68rem;
+            color: rgba(150, 180, 210, 0.5);
+            letter-spacing: 0.03em;
+            opacity: 0;
+            transition: var(--transition-fast);
+        }
+        .teacher-card:hover .card-click-hint {
+            opacity: 1;
+        }
+
+        /* 空状态 */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            color: var(--text-dim);
+            gap: 12px;
+            font-size: 0.9rem;
+            letter-spacing: 0.04em;
+        }
+        .empty-state .icon {
+            font-size: 3rem;
+            opacity: 0.5;
+        }
+
+        /* ============ 右侧面板 ============ */
+        .panel-right {
+            width: 300px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .group-rate-list {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+        .group-rate-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.78rem;
+            padding: 6px 0;
+        }
+        .group-rate-name {
+            width: 110px;
+            flex-shrink: 0;
+            color: var(--text-secondary);
+            letter-spacing: 0.03em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .group-rate-bar-wrap {
+            flex: 1;
+            height: 14px;
+            background: rgba(20, 35, 60, 0.6);
+            border-radius: 7px;
+            overflow: hidden;
+            position: relative;
+        }
+        .group-rate-bar {
+            height: 100%;
+            border-radius: 7px;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            background: linear-gradient(90deg, var(--accent-green), #22c55e);
+            position: relative;
+        }
+        .group-rate-bar.low {
+            background: linear-gradient(90deg, var(--accent-orange), #f59e0b);
+        }
+        .group-rate-bar.critical {
+            background: linear-gradient(90deg, var(--accent-red), #ef4444);
+        }
+        .group-rate-value {
+            width: 36px;
+            text-align: right;
+            font-weight: 600;
+            font-size: 0.78rem;
+            color: var(--text-primary);
+            flex-shrink: 0;
+        }
+        .recent-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 180px;
+            overflow-y: auto;
+        }
+        .recent-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 10px;
+            background: rgba(15, 28, 50, 0.5);
+            border-radius: var(--radius-sm);
+            font-size: 0.78rem;
+            border: 1px solid transparent;
+            transition: var(--transition-fast);
+        }
+        .recent-item:hover {
+            border-color: rgba(60, 110, 180, 0.5);
+        }
+        .recent-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #fff;
+            flex-shrink: 0;
+        }
+        .recent-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .recent-name {
+            font-weight: 600;
+            color: #fff;
+            font-size: 0.78rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .recent-time {
+            font-size: 0.68rem;
+            color: var(--text-dim);
+        }
+
+        /* ============ 弹窗/模态框 ============ */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.25s ease-out;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        .modal-dialog {
+            background: var(--bg-panel);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-bright);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(0, 180, 240, 0.15);
+            max-width: 620px;
+            width: 92%;
+            max-height: 85vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+        .modal-dialog.wide {
+            max-width: 800px;
+        }
+        @keyframes slideUp {
+            from {
+                transform: translateY(30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 22px;
+            border-bottom: 1px solid rgba(50, 80, 130, 0.4);
+            position: sticky;
+            top: 0;
+            background: var(--bg-panel);
+            z-index: 10;
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        }
+        .modal-header h3 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            color: #fff;
+        }
+        .modal-close {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 1px solid rgba(150, 180, 210, 0.4);
+            background: rgba(20, 35, 60, 0.6);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition-fast);
+        }
+        .modal-close:hover {
+            color: #fff;
+            border-color: var(--accent-red);
+            background: rgba(200, 50, 50, 0.3);
+            box-shadow: 0 0 12px rgba(248, 113, 113, 0.4);
+        }
+        .modal-body {
+            padding: 20px 22px;
+        }
+        .detail-field {
+            margin-bottom: 20px;
+        }
+        .detail-label {
+            font-size: 0.95rem;
+            color: var(--accent-cyan);
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .detail-label::before {
+            content: '';
+            width: 5px;
+            height: 18px;
+            background: var(--accent-cyan);
+            border-radius: 2px;
+            box-shadow: 0 0 8px var(--accent-cyan);
+        }
+        .detail-value {
+            color: #e8ecf2;
+            font-size: 1.1rem;
+            line-height: 1.75;
+            padding-left: 13px;
+            letter-spacing: 0.04em;
+            word-break: break-word;
+        }
+        .detail-value p {
+            margin-bottom: 8px;
+        }
+        .detail-value p:last-child {
+            margin-bottom: 0;
+        }
+        .detail-meta {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(50, 80, 130, 0.3);
+        }
+        .detail-meta-item {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            letter-spacing: 0.03em;
+        }
+        .detail-meta-item strong {
+            color: #fff;
+            font-size: 1.05rem;
+        }
+
+        /* 未提交名单弹窗中的组别区块 */
+        .unsubmitted-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+        .group-block {
+            background: rgba(15, 28, 50, 0.5);
+            border-radius: var(--radius-sm);
+            padding: 14px 16px;
+            border: 1px solid rgba(40, 70, 115, 0.4);
+            display: flex;
+            flex-direction: column;
+        }
+        .group-block h4 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--accent-gold);
+            letter-spacing: 0.04em;
+            margin-bottom: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .group-block h4 .group-stat {
+            font-size: 0.72rem;
+            font-weight: 400;
+            color: var(--text-dim);
+        }
+        .unsubmitted-names {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .unsubmitted-tag {
+            background: rgba(248, 113, 113, 0.18);
+            color: #fca5a5;
+            padding: 6px 4px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            letter-spacing: 0.02em;
+            border: 1px solid rgba(248, 113, 113, 0.3);
+            text-align: center;
+        }
+        .all-submitted-badge {
+            display: inline-block;
+            background: rgba(52, 211, 153, 0.18);
+            color: #6ee7b7;
+            padding: 4px 12px;
+            border-radius: 14px;
+            font-size: 0.78rem;
+            letter-spacing: 0.03em;
+            border: 1px solid rgba(52, 211, 153, 0.35);
+        }
+
+        /* ============ 词云 / 文本洞察 ============ */
+        .wordcloud-card {
+            cursor: default;
+            position: relative;
+        }
+        .wordcloud-card .panel-card-title {
+            margin-bottom: 6px;
+        }
+        .wordcloud-card .btn-fullscreen {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 28px;
+            height: 28px;
+            font-size: 0.85rem;
+            z-index: 10;
+        }
+        .wordcloud-wrap {
+            position: relative;
+            width: 100%;
+            height: 200px;
+            cursor: crosshair;
+        }
+        .wordcloud-wrap canvas {
+            display: block;
+        }
+        .wordcloud-tooltip {
+            position: fixed;
+            z-index: 3000;
+            background: rgba(13, 21, 51, 0.96);
+            border: 1px solid var(--accent-cyan);
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            color: #fff;
+            font-size: 0.82rem;
+            letter-spacing: 0.03em;
+            pointer-events: none;
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5), var(--glow-cyan);
+            white-space: nowrap;
+            transition: opacity 0.15s ease-out;
+        }
+        .wordcloud-tooltip .tw-freq {
+            color: var(--accent-gold);
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+        .wordcloud-tooltip .tw-hint {
+            color: var(--text-dim);
+            font-size: 0.68rem;
+            margin-top: 3px;
+        }
+        .wordcloud-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 6px;
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            letter-spacing: 0.03em;
+        }
+        .wordcloud-empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 180px;
+            color: var(--text-dim);
+            font-size: 0.82rem;
+            letter-spacing: 0.04em;
+        }
+
+        /* 全屏词云模态框 */
+        .wordcloud-fullscreen-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(8, 13, 36, 0.98);
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            animation: fadeIn 0.3s ease-out;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+        .wordcloud-fullscreen-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 24px;
+            border-bottom: 1px solid rgba(50, 80, 130, 0.4);
+            flex-shrink: 0;
+        }
+        .wordcloud-fullscreen-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            background: linear-gradient(135deg, #a0d8ff 0%, #c0a8ff 50%, #80c8ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .wordcloud-fullscreen-close {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 1px solid rgba(150, 180, 210, 0.4);
+            background: rgba(20, 35, 60, 0.6);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition-fast);
+        }
+        .wordcloud-fullscreen-close:hover {
+            color: #fff;
+            border-color: var(--accent-red);
+            background: rgba(200, 50, 50, 0.3);
+        }
+        .wordcloud-fullscreen-wrap {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            cursor: crosshair;
+        }
+        .wordcloud-fullscreen-wrap canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+        }
+        .wordcloud-fullscreen-stats {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(13, 21, 51, 0.85);
+            border: 1px solid rgba(100, 160, 220, 0.3);
+            border-radius: var(--radius-md);
+            padding: 12px 18px;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            letter-spacing: 0.03em;
+        }
+        .wordcloud-fullscreen-stats .stat-item {
+            margin-bottom: 4px;
+        }
+        .wordcloud-fullscreen-stats .stat-item:last-child {
+            margin-bottom: 0;
+        }
+        .wordcloud-fullscreen-stats .stat-value {
+            color: var(--accent-cyan);
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        /* 漂浮动画词 */
+        .floating-word {
+            position: absolute;
+            pointer-events: none;
+            font-weight: 600;
+            opacity: 0.7;
+            animation: floatUp 8s ease-out forwards;
+            text-shadow: 0 0 10px currentColor;
+        }
+        @keyframes floatUp {
+            0% {
+                transform: translateY(100vh) scale(0.8);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.7;
+            }
+            90% {
+                opacity: 0.7;
+            }
+            100% {
+                transform: translateY(-100px) scale(1.2);
+                opacity: 0;
+            }
+        }
+
+        /* 相关文本弹窗 */
+        .related-text-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .related-text-keyword {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.25), rgba(139, 92, 246, 0.25));
+            color: var(--accent-cyan);
+            padding: 4px 14px;
+            border-radius: 16px;
+            font-weight: 700;
+            font-size: 1rem;
+            letter-spacing: 0.05em;
+            border: 1px solid rgba(0, 212, 255, 0.4);
+        }
+        .related-text-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 55vh;
+            overflow-y: auto;
+        }
+        .related-text-item {
+            background: rgba(15, 28, 55, 0.55);
+            border-radius: var(--radius-sm);
+            padding: 14px 16px;
+            border: 1px solid rgba(40, 70, 120, 0.35);
+            transition: var(--transition-fast);
+        }
+        .related-text-item:hover {
+            border-color: rgba(80, 150, 210, 0.55);
+            background: rgba(18, 34, 62, 0.7);
+        }
+        .related-text-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            letter-spacing: 0.03em;
+        }
+        .related-text-meta .rt-name {
+            color: #fff;
+            font-weight: 700;
+        }
+        .related-text-meta .rt-subject {
+            background: rgba(74, 158, 255, 0.2);
+            color: var(--accent-blue);
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            border: 1px solid rgba(74, 158, 255, 0.3);
+        }
+        .related-text-content {
+            color: #d0d8e8;
+            font-size: 0.9rem;
+            line-height: 1.65;
+            letter-spacing: 0.03em;
+        }
+        .related-text-content .highlight {
+            background: rgba(240, 192, 96, 0.35);
+            color: var(--accent-gold);
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-weight: 600;
+        }
+
+        /* 刷新指示器 */
+        .refresh-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            padding: 6px 0;
+        }
+        .refresh-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            animation: blink-dot 1.5s ease-in-out infinite;
+        }
+
+        /* Toast提示 */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 2000;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-bright);
+            border-radius: var(--radius-md);
+            padding: 12px 18px;
+            color: #fff;
+            font-size: 0.85rem;
+            letter-spacing: 0.03em;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+            animation: slideInRight 0.35s ease-out;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        @keyframes slideInRight {
+            from {
+                transform: translateX(120%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* 响应式 */
+        @media (max-width: 1400px) {
+            .panel-left {
+                width: 240px;
+            }
+            .panel-right {
+                width: 260px;
+            }
+            .cards-grid {
+                grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+            }
+            .header-title {
+                font-size: 1.1rem;
+            }
+        }
+        @media (max-width: 1100px) {
+            .main-content {
+                flex-direction: column;
+            }
+            .panel-left,
+            .panel-right {
+                width: 100%;
+                flex-direction: row;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            .panel-left .panel-card,
+            .panel-right .panel-card {
+                flex: 1;
+                min-width: 220px;
+            }
+            .cards-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            }
+            .header {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            .header-stats {
+                margin-left: 0;
+            }
         }
     </style>
 </head>
-<body class="p-4 md:p-8 pb-24 max-w-[1600px] mx-auto">
+<body>
 
-    <header class="mb-8 text-center">
-        <h1 class="text-3xl md:text-4xl font-bold tech-font neon-text tracking-widest mb-2 mt-4">RESEARCH DATA HUB</h1>
-        <p class="text-indigo-400 text-base md:text-lg opacity-80 italic">教研数据实时监控大屏</p>
-
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-            <div class="cyber-card rounded-xl p-4 md:p-6 text-center">
-                <p class="text-sm md:text-base text-gray-400 mb-2">总填写人数</p>
-                <p id="totalCount" class="text-3xl md:text-5xl font-bold tech-font text-indigo-400">0</p>
-            </div>
-            <div class="cyber-card rounded-xl p-4 md:p-6 text-center">
-                <p class="text-sm md:text-base text-gray-400 mb-2">今日新增</p>
-                <p id="todayCount" class="text-3xl md:text-5xl font-bold tech-font text-cyan-400">0</p>
-            </div>
-            <div class="cyber-card rounded-xl p-4 md:p-6 text-center">
-                <p class="text-sm md:text-base text-gray-400 mb-2">涉及学科</p>
-                <p id="subjectCount" class="text-3xl md:text-5xl font-bold tech-font text-emerald-400">0</p>
-            </div>
-            <div class="cyber-card rounded-xl p-4 md:p-6 text-center">
-                <p class="text-sm md:text-base text-gray-400 mb-2">参与教师</p>
-                <p id="teacherCount" class="text-3xl md:text-5xl font-bold tech-font text-amber-400">0</p>
-            </div>
-        </div>
-    </header>
-
-    <div class="lg:flex lg:gap-8 lg:items-start">
-        <div class="lg:w-1/3 lg:sticky lg:top-8 z-30">
-            <div class="cyber-card rounded-2xl p-4 md:p-6 mb-6">
-                <h3 class="text-base md:text-lg font-bold text-indigo-400 mb-4 flex items-center">
-                    <i data-lucide="bar-chart-3" class="w-5 h-5 mr-2"></i>
-                    学科提交分布
-                </h3>
-                <div class="relative h-48 md:h-64">
-                    <canvas id="subjectChart"></canvas>
+    <div class="dashboard">
+        <!-- ==================== 顶部导航栏 ==================== -->
+        <header class="header">
+            <span class="header-icon">📊</span>
+            <span class="header-title">华南司法职业学校教研会 · 数据大屏</span>
+            <div class="header-stats">
+                <div class="header-stat-item">
+                    <span class="header-stat-dot"></span>
+                    <span>已提交</span>
+                    <span class="header-stat-value" id="totalSubmitted">0</span>
+                    <span>人</span>
+                </div>
+                <div class="header-stat-item">
+                    <span>📋 总人数</span>
+                    <span class="header-stat-value" id="totalExpected" style="color:#a0b8d4;">0</span>
+                </div>
+                <div class="header-stat-item">
+                    <span>📈 提交率</span>
+                    <span class="header-stat-value" id="overallRate" style="color:#34d399;">0%</span>
                 </div>
             </div>
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="searchInput" placeholder="搜索姓名..." oninput="applyFilters()">
+            </div>
+            <select class="filter-select" id="subjectFilter" onchange="applyFilters()">
+                <option value="all">全部学科</option>
+            </select>
+            <button class="btn btn-danger" onclick="openUnsubmittedModal()" title="查看未提交名单">
+                ⚠️ 未提交 <span class="badge" id="unsubmittedBadge">0</span>
+            </button>
+            <button class="btn btn-outline" onclick="exportToWord()" title="导出Word数据">
+                📄 Word
+            </button>
+            <button class="btn btn-outline" onclick="exportToExcel()" title="导出Excel数据">
+                📊 Excel
+            </button>
+            <button class="btn btn-outline" onclick="refreshAllData()" title="手动刷新数据">
+                🔄 刷新
+            </button>
+            <button class="btn-fullscreen" onclick="toggleFullscreen()" title="全屏模式">
+                ⛶
+            </button>
+        </header>
 
-            <div class="sticky top-4 lg:static z-40 mb-6 space-y-4">
-                <div class="relative flex gap-3">
-                    <div class="relative flex-1">
-                        <i data-lucide="search" class="absolute left-4 top-3.5 w-5 h-5 text-indigo-400"></i>
-                        <input type="text" id="searchInput" placeholder="搜索教师姓名..."
-                            class="w-full bg-slate-900/80 border border-indigo-500/50 rounded-full py-3 md:py-4 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white placeholder-gray-500 text-sm md:text-base">
+        <!-- ==================== 主体内容区 ==================== -->
+        <div class="main-content">
+            <!-- 左侧面板 -->
+            <aside class="panel-left">
+                <div class="panel-card">
+                    <div class="panel-card-title"><span class="dot"></span>提交概览</div>
+                    <div class="stat-grid">
+                        <div class="stat-item">
+                            <div class="stat-value" id="statTotal">0</div>
+                            <div class="stat-label">总提交数</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="statToday">0</div>
+                            <div class="stat-label">今日提交</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="statSubjects">0</div>
+                            <div class="stat-label">涉及学科</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="statRate">0%</div>
+                            <div class="stat-label">整体提交率</div>
+                        </div>
                     </div>
-                    <button onclick="openUnsubmittedModal()" class="bg-amber-600 hover:bg-amber-700 text-white px-5 py-3 md:py-4 rounded-full flex items-center space-x-2 shadow-lg active:scale-95 transition-all text-sm md:text-base font-bold whitespace-nowrap">
-                        <i data-lucide="users" class="w-5 h-5"></i>
-                        <span>未提交名单</span>
-                    </button>
                 </div>
-                <select id="subjectFilter" onchange="filterData()" class="w-full bg-slate-900/80 border border-indigo-500/50 rounded-full py-3 md:py-4 px-5 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white appearance-none cursor-pointer text-sm md:text-base">
-                    <option value="">全部学科</option>
-                    <option>语文</option><option>数学</option><option>英语</option><option>历史</option>
-                    <option>思政</option><option>音乐</option><option>体育</option><option>计算机</option>
-                    <option>信息技术</option><option>工业机器人</option><option>电子商务</option>
-                    <option>数字媒体</option><option>法律事务</option><option>社区公共</option>
-                    <option>特勤训练</option>
-                </select>
-            </div>
-        </div>
+                <div class="panel-card">
+                    <div class="panel-card-title"><span class="dot"></span>学科分布</div>
+                    <div class="chart-wrap">
+                        <canvas id="chartSubjectPie"></canvas>
+                    </div>
+                </div>
+                <div class="panel-card wordcloud-card">
+                    <div class="panel-card-title"><span class="dot" style="background:var(--accent-purple);box-shadow:0 0 8px var(--accent-purple);"></span>文本洞察 · 词云</div>
+                    <button class="btn-fullscreen" onclick="openWordCloudFullscreen()" title="全屏查看词云">⛶</button>
+                    <div class="wordcloud-wrap" id="wordcloudWrap">
+                        <div class="wordcloud-empty">📝 等待数据加载...</div>
+                    </div>
+                    <div class="wordcloud-legend" id="wordcloudLegend">
+                        💡 悬停查看频率 · 点击查看原文
+                    </div>
+                </div>
+            </aside>
 
-        <div class="lg:w-2/3 w-full mt-6 lg:mt-0">
-            <main id="dataList" class="space-y-4 md:space-y-6">
-                <div class="animate-pulse flex flex-col space-y-4">
-                    <div class="h-32 md:h-40 bg-slate-800 rounded-xl"></div>
-                    <div class="h-32 md:h-40 bg-slate-800 rounded-xl"></div>
+            <!-- 中间卡片区域 -->
+            <main class="panel-center">
+                <div class="cards-header">
+                    <span>📝 提交记录 · <span class="cards-count" id="cardsCount">0</span> 条</span>
+                    <span style="font-size:0.7rem;color:var(--text-dim);">点击卡片查看详情</span>
+                </div>
+                <div class="cards-grid" id="cardsGrid">
+                    <div class="empty-state">
+                        <span class="icon">📭</span>
+                        <span>暂无提交数据</span>
+                        <span style="font-size:0.7rem;">数据将自动从API获取</span>
+                    </div>
                 </div>
             </main>
+
+            <!-- 右侧面板 -->
+            <aside class="panel-right">
+                <div class="panel-card">
+                    <div class="panel-card-title"><span class="dot"></span>各组提交率</div>
+                    <div class="group-rate-list" id="groupRateList">
+                        <span style="color:var(--text-dim);font-size:0.78rem;">加载中...</span>
+                    </div>
+                </div>
+                <div class="panel-card">
+                    <div class="panel-card-title"><span class="dot"></span>最近提交</div>
+                    <div class="recent-list" id="recentList">
+                        <span style="color:var(--text-dim);font-size:0.78rem;">加载中...</span>
+                    </div>
+                </div>
+                <div class="panel-card" style="cursor:pointer;" onclick="openUnsubmittedModal()">
+                    <div class="panel-card-title"><span class="dot" style="background:var(--accent-red);box-shadow:0 0 8px var(--accent-red);"></span>未提交提醒</div>
+                    <div style="font-size:0.8rem;color:var(--text-secondary);letter-spacing:0.03em;">
+                        共 <span style="color:var(--accent-red);font-weight:700;font-size:1.1rem;" id="unsubmittedTotal">0</span> 人未提交
+                    </div>
+                    <div style="font-size:0.68rem;color:var(--text-dim);margin-top:4px;">点击查看详细名单 →</div>
+                    <div class="refresh-indicator" style="margin-top:6px;">
+                        <span class="refresh-dot"></span> 每10秒自动刷新
+                    </div>
+                </div>
+            </aside>
         </div>
     </div>
 
-    <div class="fixed bottom-6 left-4 right-4 flex justify-between items-center">
-        <button onclick="fetchData()" class="cyber-card rounded-full p-4 bg-indigo-600/20 active:scale-90 transition-transform">
-            <i data-lucide="refresh-cw" class="w-6 h-6 text-indigo-400"></i>
-        </button>
-
-        <div class="flex space-x-2">
-            <button onclick="exportData('xlsx')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded-xl flex items-center space-x-2 shadow-lg active:scale-95 transition-all text-sm font-bold">
-                <i data-lucide="download" class="w-4 h-4"></i>
-                <span>导出 EXCEL</span>
-            </button>
-            <button onclick="exportData('doc')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-4 rounded-xl flex items-center space-x-2 shadow-lg active:scale-95 transition-all text-sm font-bold">
-                <i data-lucide="file-text" class="w-4 h-4"></i>
-                <span>WORD</span>
-            </button>
-            <button onclick="exportData('csv')" class="bg-slate-800 border border-indigo-500/50 text-indigo-400 px-4 py-3 rounded-xl active:scale-95 transition-all text-sm font-bold">
-                CSV
-            </button>
+    <!-- ==================== 详情弹窗 ==================== -->
+    <div class="modal-overlay" id="detailModal" style="display:none;" onclick="closeDetailModal(event)">
+        <div class="modal-dialog" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3>📋 提交详情</h3>
+                <button class="modal-close" onclick="closeDetailModal()">✕</button>
+            </div>
+            <div class="modal-body" id="detailModalBody"></div>
         </div>
     </div>
 
-    <div id="unsubmittedModal" class="fixed inset-0 z-50 hidden">
-        <div class="modal-overlay absolute inset-0" onclick="closeUnsubmittedModal()"></div>
-        <div class="absolute inset-4 md:inset-10 flex items-center justify-center">
-            <div class="modal-content rounded-2xl w-full max-w-2xl md:max-w-4xl lg:max-w-6xl max-h-full flex flex-col shadow-2xl">
-                <div class="flex items-center justify-between p-4 md:p-6 border-b border-indigo-500/30">
-                    <h3 class="text-lg md:text-2xl font-bold text-white flex items-center tracking-wide">
-                        <i data-lucide="user-x" class="w-6 h-6 md:w-8 md:h-8 mr-3 text-amber-400"></i>
-                        未提交教师名单
-                    </h3>
-                    <button onclick="closeUnsubmittedModal()" class="text-gray-400 hover:text-white transition-colors">
-                        <i data-lucide="x" class="w-6 h-6 md:w-8 md:h-8"></i>
-                    </button>
+    <!-- ==================== 未提交名单弹窗 ==================== -->
+    <div class="modal-overlay" id="unsubmittedModal" style="display:none;" onclick="closeUnsubmittedModal(event)">
+        <div class="modal-dialog wide" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3>⚠️ 未提交名单（按组别）</h3>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <span class="refresh-indicator" style="margin:0;">
+                        <span class="refresh-dot"></span> 每10秒刷新
+                    </span>
+                    <button class="modal-close" onclick="closeUnsubmittedModal()">✕</button>
                 </div>
-                <div id="unsubmittedList" class="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 md:space-y-6" style="max-height: calc(100vh - 120px);">
+            </div>
+            <div class="modal-body" id="unsubmittedModalBody"></div>
+        </div>
+    </div>
+
+    <!-- 全屏词云模态框 -->
+    <div class="wordcloud-fullscreen-overlay" id="wordcloudFullscreenOverlay" style="display:none;">
+        <div class="wordcloud-fullscreen-header">
+            <div class="wordcloud-fullscreen-title">🎯 文本洞察 · 词云分析</div>
+            <button class="wordcloud-fullscreen-close" onclick="closeWordCloudFullscreen()">✕</button>
+        </div>
+        <div class="wordcloud-fullscreen-wrap" id="wordcloudFullscreenWrap">
+            <div class="wordcloud-fullscreen-stats" id="wordcloudFullscreenStats"></div>
+        </div>
+    </div>
+
+    <!-- 相关文本弹窗（词云点击查看原文） -->
+    <div class="modal-overlay" id="relatedTextModal" style="display:none;" onclick="closeRelatedTextModal(event)">
+        <div class="modal-dialog wide" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="related-text-header">
+                    <h3>📖 相关原文</h3>
+                    <span class="related-text-keyword" id="relatedTextKeyword"></span>
+                    <span style="color:var(--text-dim);font-size:0.82rem;" id="relatedTextCount"></span>
                 </div>
+                <button class="modal-close" onclick="closeRelatedTextModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="related-text-list" id="relatedTextList"></div>
             </div>
         </div>
     </div>
 
+    <!-- Toast容器 -->
+    <div id="toastContainer"></div>
+
     <script>
-        let allSubmissions = [];
-        const apiUrl = 'https://quickform.cn/api/dugy3wfywf/all';
-        let subjectChart = null;
+        (function() {
+            // ============ 常量与配置 ============
+            const API_URL = 'https://quickform.cn/api/dugy3wfywf/all';
+            const REFRESH_INTERVAL_UNSUBMITTED = 10000; // 未提交名单每10秒刷新
+            const REFRESH_INTERVAL_MAIN = 30000; // 主数据每30秒刷新
 
-        const teacherGroups = {
-            '公共科组': ['刘婷', '陈妙芬', '万佳欣', '曾萍', '武佳欣', '林思晓', '肖世珍', '王亮胜', '何坤青', '余静', '程晓慧', '谭翠', '吴佳钰', '江苗', '钟仪', '陈敏慧', '李奕蓉', '谭颖茵', '陈妍帆'],
-            '素养学科组': ['吴家佳', '郭素萍', '朱晓萍', '胡凤玲', '张珩', '叶家宝', '王春燕', '郑成', '黄海帆', '李彩鑫', '上官名监', '陈泽林'],
-            '计算机信息技术组': ['李晓冰', '郑春兰', '艾睿慧', '郑丽丽', '陈梓涛', '何琦琪', '陈秋燕', '胡旭妍', '方哲佳', '廖楚灵', '张洁冬', '王子波'],
-            '电商数媒机器人组': ['陈楚词', '林嘉伟', '彭志崇', '陈锐鹏', '詹培波', '金少清', '韩同成'],
-            '法律事务组': ['周思睿', '韦萌珊', '杜佳', '蔡梓然', '杨佳敏'],
-            '社区公共特勤训练组': ['林金蓉', '莫清妮', '钟新生', '刘创杰', '陈进', '李顺豪', '李治荣']
-        };
+            // 组别名单
+            const GROUP_CONFIG = {
+    '法律社区组': ['周思睿', '林金蓉', '莫清妮', '杜佳', '杨佳敏', '韦萌珊', '蔡梓然'],
+    '公共科组': ['王亮胜', '万佳欣', '武佳欣', '肖世珍', '曾萍', '陈妙芬', '吴佳钰', '余静', '谭翠', '程晓慧', '陈敏慧', '谭颖茵', '范珍龄', '郭梓鑫'],
+    '计算机信息技术组': ['李晓冰', '黄创钦', '郑春兰', '张洁冬', '陈梓涛', '胡旭妍', '廖楚灵', '王子波', '艾睿慧', '方哲佳', '陈秋燕', '何琦琪'],
+    '电商数媒机器人组': ['陈楚词', '陈锐鹏', '刘燕煌', '金少清', '陈东烨', '郑丽丽', '黄沛东', '韩同成', '彭志崇', '林嘉伟', '林德裕', '杨琴'],
+    '素养学科组': ['黄珠莹', '张珩', '胡凤玲', '朱晓萍', '郭素萍', '郑成', '黄海帆', '郭良华', '叶家宝', '王春燕', '黄玉纯', '雷建平', '许永雄', '胡磊', '余佛君', '罗春明', '吴海燕', '杨玉倩', '邱晓明'],
+    '队长组': ['陈林峰', '陈锺添', '陈俊宇', '陈炳胜', '李彩鑫', '陈泽林', '上官名监', '刘创杰', '钟新生', '陈进', '李顺豪', '李治荣', '方全']
+};
+            
 
-        lucide.createIcons();
+            // 计算总人数
+            const TOTAL_EXPECTED = Object.values(GROUP_CONFIG).reduce((sum, arr) => sum + arr.length, 0);
+            // 所有期望提交的人员姓名集合
+            const ALL_EXPECTED_NAMES = new Set(Object.values(GROUP_CONFIG).flat());
 
-        let isModalOpen = false;
+            // ============ 全局状态 ============
+            let allSubmissions = [];
+            let unsubmittedByGroup = {}; // { groupName: [name1, name2, ...] }
+            let totalUnsubmitted = 0;
+            let mainRefreshTimer = null;
+            let unsubmittedRefreshTimer = null;
+            let isUnsubmittedModalOpen = false;
+            let chartSubjectPieInstance = null;
 
-        async function fetchData(silent = false) {
-            try {
-                const response = await fetch(apiUrl);
-                const data = await response.json();
-                allSubmissions = data.submissions;
-                updateStats(data);
-                updateChart();
-                filterData();
-                if (isModalOpen) {
-                    renderUnsubmittedList();
-                }
-            } catch (error) {
-                console.error('Fetch Error:', error);
-                if (!silent) {
-                    document.getElementById('dataList').innerHTML = `<p class="text-center text-red-400">数据加载失败</p>`;
-                }
-            }
-        }
+            // ============ DOM引用 ============
+            const $cardsGrid = document.getElementById('cardsGrid');
+            const $cardsCount = document.getElementById('cardsCount');
+            const $searchInput = document.getElementById('searchInput');
+            const $subjectFilter = document.getElementById('subjectFilter');
+            const $unsubmittedBadge = document.getElementById('unsubmittedBadge');
+            const $unsubmittedTotal = document.getElementById('unsubmittedTotal');
+            const $groupRateList = document.getElementById('groupRateList');
+            const $recentList = document.getElementById('recentList');
+            const $detailModal = document.getElementById('detailModal');
+            const $detailModalBody = document.getElementById('detailModalBody');
+            const $unsubmittedModal = document.getElementById('unsubmittedModal');
+            const $unsubmittedModalBody = document.getElementById('unsubmittedModalBody');
+            const $toastContainer = document.getElementById('toastContainer');
 
-        function updateStats(data) {
-            document.getElementById('totalCount').innerText = data.total_submissions;
-            const today = new Date().toISOString().split('T')[0];
-            const todayCount = data.submissions.filter(s => s.submitted_at.includes(today)).length;
-            document.getElementById('todayCount').innerText = todayCount;
-
-            const uniqueSubjects = [...new Set(data.submissions.map(s => s.subject))];
-            document.getElementById('subjectCount').innerText = uniqueSubjects.length;
-
-            const uniqueTeachers = [...new Set(data.submissions.map(s => s.name))];
-            document.getElementById('teacherCount').innerText = uniqueTeachers.length;
-        }
-
-        function updateChart() {
-            const subjectStats = {};
-            allSubmissions.forEach(item => {
-                subjectStats[item.subject] = (subjectStats[item.subject] || 0) + 1;
-            });
-
-            const sortedSubjects = Object.entries(subjectStats).sort((a, b) => b[1] - a[1]);
-            const labels = sortedSubjects.map(s => s[0]);
-            const values = sortedSubjects.map(s => s[1]);
-
-            const ctx = document.getElementById('subjectChart').getContext('2d');
-
-            if (subjectChart) {
-                subjectChart.destroy();
+            // ============ 工具函数 ============
+            function showToast(message, duration = 2500) {
+                const toast = document.createElement('div');
+                toast.className = 'toast';
+                toast.innerHTML = `✅ ${message}`;
+                $toastContainer.appendChild(toast);
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateX(120%)';
+                    toast.style.transition = 'all 0.35s ease-in';
+                    setTimeout(() => toast.remove(), 350);
+                }, duration);
             }
 
-            subjectChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: '提交数',
-                        data: values,
-                        backgroundColor: 'rgba(99, 102, 241, 0.6)',
-                        borderColor: 'rgba(99, 102, 241, 1)',
-                        borderWidth: 1,
-                        borderRadius: 4,
-                        barThickness: 20
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: 'rgba(30, 41, 59, 0.9)',
-                            titleColor: '#e2e8f0',
-                            bodyColor: '#e2e8f0',
-                            borderColor: 'rgba(99, 102, 241, 0.5)',
-                            borderWidth: 1
-                        }
-                    },
-                    scales: {
-                        x: {
-                            ticks: { color: '#94a3b8', font: { size: 10 } },
-                            grid: { display: false },
-                            maxRotation: 45,
-                            minRotation: 45
+            function formatTime(dateStr) {
+                if (!dateStr) return '未知';
+                try {
+                    const d = new Date(dateStr.replace(' ', 'T'));
+                    if (isNaN(d.getTime())) return dateStr;
+                    const month = String(d.getMonth() + 1).padStart(2, '0');
+                    const day = String(d.getDate()).padStart(2, '0');
+                    const hours = String(d.getHours()).padStart(2, '0');
+                    const minutes = String(d.getMinutes()).padStart(2, '0');
+                    return `${month}-${day} ${hours}:${minutes}`;
+                } catch (e) {
+                    return dateStr;
+                }
+            }
+
+            function getTodayStr() {
+                const d = new Date();
+                return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+            }
+
+            // ============ 数据获取 ============
+            async function fetchData() {
+                try {
+                    const response = await fetch(API_URL, {
+                        method: 'GET',
+                        headers: { 'Accept': 'application/json' },
+                        // 如果API有CORS限制，可尝试 mode: 'cors'
+                    });
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    const data = await response.json();
+                    if (!data.submissions || !Array.isArray(data.submissions)) {
+                        throw new Error('数据格式异常');
+                    }
+                    return data.submissions;
+                } catch (err) {
+                    console.error('数据获取失败:', err);
+                    throw err;
+                }
+            }
+
+            // ============ 计算未提交名单 ============
+            function computeUnsubmitted(submissions) {
+                const submittedNames = new Set(submissions.map(s => s.name).filter(Boolean));
+                const result = {};
+                let total = 0;
+                for (const [groupName, names] of Object.entries(GROUP_CONFIG)) {
+                    const unsubmitted = names.filter(name => !submittedNames.has(name));
+                    result[groupName] = unsubmitted;
+                    total += unsubmitted.length;
+                }
+                return { unsubmittedByGroup: result, totalUnsubmitted: total };
+            }
+
+            // ============ 渲染函数 ============
+            function renderAll(submissions) {
+                allSubmissions = submissions || [];
+                const { unsubmittedByGroup: ubg, totalUnsubmitted: tu } = computeUnsubmitted(allSubmissions);
+                unsubmittedByGroup = ubg;
+                totalUnsubmitted = tu;
+
+                updateHeaderStats();
+                updateSubjectFilter();
+                updateLeftPanel();
+                updateRightPanel();
+                applyFilters();
+                updateBadges();
+                updateChartSubjectPie();
+                renderWordCloud();
+            }
+
+            function updateHeaderStats() {
+                document.getElementById('totalSubmitted').textContent = allSubmissions.length;
+                document.getElementById('totalExpected').textContent = TOTAL_EXPECTED;
+                const rate = TOTAL_EXPECTED > 0 ? Math.round((allSubmissions.length / TOTAL_EXPECTED) * 100) : 0;
+                document.getElementById('overallRate').textContent = rate + '%';
+            }
+
+            function updateSubjectFilter() {
+                const subjects = [...new Set(allSubmissions.map(s => s.subject).filter(Boolean))];
+                const currentVal = $subjectFilter.value;
+                $subjectFilter.innerHTML = '<option value="all">全部学科</option>';
+                subjects.sort().forEach(sub => {
+                    $subjectFilter.innerHTML +=
+                        `<option value="${escapeHtml(sub)}" ${currentVal === sub ? 'selected' : ''}>${escapeHtml(sub)}</option>`;
+                });
+                if (!subjects.includes(currentVal) && currentVal !== 'all') {
+                    $subjectFilter.value = 'all';
+                }
+            }
+
+            function updateLeftPanel() {
+                document.getElementById('statTotal').textContent = allSubmissions.length;
+                const todayStr = getTodayStr();
+                const todayCount = allSubmissions.filter(s => s.submitted_at && s.submitted_at.startsWith(
+                    todayStr)).length;
+                document.getElementById('statToday').textContent = todayCount;
+                const subjects = new Set(allSubmissions.map(s => s.subject).filter(Boolean));
+                document.getElementById('statSubjects').textContent = subjects.size;
+                const rate = TOTAL_EXPECTED > 0 ? Math.round((allSubmissions.length / TOTAL_EXPECTED) * 100) : 0;
+                document.getElementById('statRate').textContent = rate + '%';
+            }
+
+            function updateRightPanel() {
+                // 各组提交率
+                let groupRateHTML = '';
+                const submittedNames = new Set(allSubmissions.map(s => s.name).filter(Boolean));
+                for (const [groupName, names] of Object.entries(GROUP_CONFIG)) {
+                    const submitted = names.filter(n => submittedNames.has(n)).length;
+                    const total = names.length;
+                    const rate = total > 0 ? Math.round((submitted / total) * 100) : 0;
+                    let barClass = '';
+                    if (rate < 50) barClass = 'critical';
+                    else if (rate < 80) barClass = 'low';
+                    groupRateHTML += `
+                        <div class="group-rate-item">
+                            <span class="group-rate-name" title="${escapeHtml(groupName)}">${escapeHtml(groupName)}</span>
+                            <div class="group-rate-bar-wrap">
+                                <div class="group-rate-bar ${barClass}" style="width:${rate}%;"></div>
+                            </div>
+                            <span class="group-rate-value">${rate}%</span>
+                            <span style="font-size:0.65rem;color:var(--text-dim);width:40px;text-align:right;">${submitted}/${total}</span>
+                        </div>`;
+                }
+                $groupRateList.innerHTML = groupRateHTML;
+
+                // 最近提交
+                const recent = [...allSubmissions].sort((a, b) => {
+                    const ta = new Date((a.submitted_at || '').replace(' ', 'T')).getTime();
+                    const tb = new Date((b.submitted_at || '').replace(' ', 'T')).getTime();
+                    return tb - ta;
+                }).slice(0, 6);
+                let recentHTML = '';
+                if (recent.length === 0) {
+                    recentHTML = '<span style="color:var(--text-dim);font-size:0.78rem;">暂无提交</span>';
+                } else {
+                    recent.forEach(s => {
+                        const initial = (s.name || '?').charAt(0);
+                        recentHTML += `
+                            <div class="recent-item">
+                                <div class="recent-avatar">${escapeHtml(initial)}</div>
+                                <div class="recent-info">
+                                    <div class="recent-name">${escapeHtml(s.name || '未知')}</div>
+                                    <div class="recent-time">${formatTime(s.submitted_at)}</div>
+                                </div>
+                                <span style="font-size:0.68rem;color:var(--text-dim);">${escapeHtml(s.subject || '')}</span>
+                            </div>`;
+                    });
+                }
+                $recentList.innerHTML = recentHTML;
+            }
+
+            function applyFilters() {
+                const searchTerm = $searchInput.value.trim().toLowerCase();
+                const subjectFilter = $subjectFilter.value;
+                let filtered = [...allSubmissions];
+                if (subjectFilter !== 'all') {
+                    filtered = filtered.filter(s => s.subject === subjectFilter);
+                }
+                if (searchTerm) {
+                    filtered = filtered.filter(s => (s.name || '').toLowerCase().includes(searchTerm));
+                }
+                renderCards(filtered);
+                $cardsCount.textContent = filtered.length;
+            }
+
+            function renderCards(submissions) {
+                if (submissions.length === 0) {
+                    $cardsGrid.innerHTML = `
+                        <div class="empty-state">
+                            <span class="icon">📭</span>
+                            <span>暂无匹配的提交记录</span>
+                            <span style="font-size:0.7rem;">尝试调整搜索或筛选条件</span>
+                        </div>`;
+                    return;
+                }
+                let html = '';
+                submissions.forEach((s, idx) => {
+                    html += `
+                        <div class="teacher-card" onclick="window._openDetail(${idx})" data-index="${idx}" title="点击查看详情">
+                            <div class="card-name">${escapeHtml(s.name || '未知')}</div>
+                            <div class="card-subject-tag">${escapeHtml(s.subject || '未填写')}</div>
+                            <div class="card-time">🕐 ${formatTime(s.submitted_at)}</div>
+                            <div class="card-click-hint">点击查看完整内容 →</div>
+                        </div>`;
+                });
+                $cardsGrid.innerHTML = html;
+                // 存储当前过滤后的数据引用，供详情弹窗使用
+                window._filteredSubmissions = submissions;
+            }
+
+            function updateBadges() {
+                $unsubmittedBadge.textContent = totalUnsubmitted;
+                $unsubmittedTotal.textContent = totalUnsubmitted;
+                if (totalUnsubmitted === 0) {
+                    $unsubmittedBadge.style.background = 'var(--accent-green)';
+                    $unsubmittedBadge.style.animation = 'none';
+                    $unsubmittedBadge.style.boxShadow = '0 0 8px rgba(52,211,153,0.5)';
+                } else {
+                    $unsubmittedBadge.style.background = 'var(--accent-red)';
+                    $unsubmittedBadge.style.animation = 'badge-pulse 2s ease-in-out infinite';
+                    $unsubmittedBadge.style.boxShadow = '';
+                }
+            }
+
+            function updateChartSubjectPie() {
+                const canvas = document.getElementById('chartSubjectPie');
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                if (chartSubjectPieInstance) {
+                    chartSubjectPieInstance.destroy();
+                    chartSubjectPieInstance = null;
+                }
+                const subjectCounts = {};
+                allSubmissions.forEach(s => {
+                    const sub = s.subject || '未填写';
+                    subjectCounts[sub] = (subjectCounts[sub] || 0) + 1;
+                });
+                const labels = Object.keys(subjectCounts);
+                const values = Object.values(subjectCounts);
+                if (labels.length === 0) {
+                    // 无数据时绘制空状态
+                    chartSubjectPieInstance = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['暂无数据'],
+                            datasets: [{ data: [1], backgroundColor: ['rgba(100,130,170,0.3)'],
+                                borderColor: ['rgba(100,130,170,0.5)'], borderWidth: 1 }]
                         },
-                        y: {
-                            beginAtZero: true,
-                            ticks: { color: '#94a3b8', stepSize: 1 },
-                            grid: { color: 'rgba(99, 102, 241, 0.1)' }
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
                         }
+                    });
+                    return;
+                }
+                const colors = [
+                    'rgba(0,212,255,0.8)', 'rgba(74,158,255,0.8)', 'rgba(139,92,246,0.8)',
+                    'rgba(52,211,153,0.8)', 'rgba(251,146,60,0.8)', 'rgba(248,113,113,0.8)',
+                    'rgba(240,192,96,0.8)', 'rgba(148,216,255,0.8)', 'rgba(167,139,250,0.8)',
+                    'rgba(94,234,212,0.8)'
+                ];
+                const bgColors = labels.map((_, i) => colors[i % colors.length]);
+                chartSubjectPieInstance = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: values,
+                            backgroundColor: bgColors,
+                            borderColor: 'rgba(8,13,36,0.8)',
+                            borderWidth: 3,
+                            hoverBorderColor: 'rgba(255,255,255,0.6)',
+                            hoverBorderWidth: 3,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: '#a0b8d4',
+                                    padding: 14,
+                                    font: { size: 11 },
+                                    usePointStyle: true,
+                                    pointStyleWidth: 8,
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(13,21,51,0.95)',
+                                titleColor: '#fff',
+                                bodyColor: '#e2e8f0',
+                                borderColor: 'rgba(100,160,220,0.5)',
+                                borderWidth: 1,
+                                padding: 12,
+                                callbacks: {
+                                    label: function(ctx) {
+                                        return ` ${ctx.label}: ${ctx.raw} 人`;
+                                    }
+                                }
+                            }
+                        },
+                    }
+                });
+            }
+
+            // ============ 词云 / 文本洞察引擎 ============
+            const STOP_WORDS = new Set([
+                '的', '了', '在', '是', '我', '有', '和', '就', '不', '人', '都', '一', '一个',
+                '上', '也', '很', '到', '说', '要', '去', '你', '会', '着', '没有', '看', '好',
+                '自己', '这', '他', '她', '它', '们', '那', '些', '什么', '怎么', '如何', '为什么',
+                '可以', '这个', '那个', '还是', '只是', '但是', '因为', '所以', '如果', '虽然',
+                '而且', '或者', '不过', '然后', '最后', '已经', '正在', '将要', '可能', '应该',
+                '需要', '能够', '必须', '一定', '非常', '比较', '更加', '最', '更', '太',
+                '真的', '确实', '当然', '其实', '也许', '大概', '大约', '左右', '几乎', '总是',
+                '经常', '有时', '偶尔', '从不', '一直', '仍然', '还是', '再', '又', '才', '刚',
+                '刚才', '以前', '以后', '之前', '之后', '以来', '以内', '以外', '之中',
+                '之间', '之上', '之下', '方面', '地方', '这里', '那里', '哪里',
+                '进行', '作出', '给予', '加以', '予以', '受到', '得到', '使得', '促使', '导致',
+                '提高', '提升', '增强', '加强', '加深', '加大', '加快', '推动', '促进', '推进',
+                '实现', '完成', '达到', '取得', '获得', '赢得', '争取', '努力', '坚持', '保持',
+                '继续', '开始', '结束', '停止', '放弃', '选择', '决定', '确定', '认为', '觉得',
+                '知道', '了解', '理解', '明白', '清楚', '熟悉', '掌握', '学会', '学好', '学习',
+                '大家', '很多', '一些', '一点', '一下', '一种', '各种', '不同', '一样', '同样',
+                '其他', '其它', '其中', '通过', '利用', '采用', '使用', '用来', '用于',
+                '这次', '每次', '本次', '下次', '上次', '今天', '明天', '昨天', '今天',
+                '感觉', '感受', '觉得', '认为', '希望', '想要', '需要', '应该', '必须',
+                '还有', '并且', '以及', '除此之外', '另外', '此外', '总之', '总的来说',
+                '填写', '未填写', '未', '该', '与', '等', '从', '向', '对', '把', '被', '比',
+                '让', '叫', '给', '为', '以', '只', '吗', '呢', '吧', '啊', '呀', '哦', '嗯',
+                '么', '嘛', '呗', '啥', '咋', '啦', '哟', '噢', '哈', '嘛',
+            ]);
+
+            function extractWords(submissions) {
+                const freq = {};
+                submissions.forEach(s => {
+                    const fields = [s.gain1, s.gain2, s.gain3, s.question].filter(Boolean);
+                    fields.forEach(text => {
+                        const segments = text.split(/[，。！？、；：""''（）\(\)\[\]【】\s\d\w\n\r]+/);
+                        segments.forEach(seg => {
+                            if (seg.length < 2) return;
+                            for (let n = 2; n <= 4; n++) {
+                                for (let i = 0; i <= seg.length - n; i++) {
+                                    const w = seg.substring(i, i + n);
+                                    if (STOP_WORDS.has(w)) continue;
+                                    if (/^[的是在了不和就也都]/.test(w)) continue;
+                                    freq[w] = (freq[w] || 0) + 1;
+                                }
+                            }
+                        });
+                    });
+                });
+                const entries = Object.entries(freq)
+                    .filter(([w, c]) => c >= 2 && w.length >= 2)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 80);
+                return entries;
+            }
+
+            function findRelatedTexts(word, submissions) {
+                const results = [];
+                submissions.forEach(s => {
+                    const fields = [
+                        { label: '收获一', text: s.gain1 },
+                        { label: '收获二', text: s.gain2 },
+                        { label: '收获三', text: s.gain3 },
+                        { label: '疑问', text: s.question }
+                    ];
+                    fields.forEach(f => {
+                        if (f.text && f.text.includes(word)) {
+                            const highlighted = escapeHtml(f.text).replace(
+                                new RegExp(escapeHtml(word).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
+                                m => `<span class="highlight">${m}</span>`
+                            );
+                            results.push({
+                                name: s.name || '未知',
+                                subject: s.subject || '未填写',
+                                field: f.label,
+                                text: f.text,
+                                highlighted: highlighted
+                            });
+                        }
+                    });
+                });
+                return results.slice(0, 50);
+            }
+
+            let wordCloudWords = [];
+            let wordCloudCanvas = null;
+
+            function renderWordCloud() {
+                const wrap = document.getElementById('wordcloudWrap');
+                if (!wrap) return;
+                const words = extractWords(allSubmissions);
+                wordCloudWords = words;
+                if (words.length === 0) {
+                    wrap.innerHTML = '<div class="wordcloud-empty">📝 暂无足够数据生成词云</div>';
+                    return;
+                }
+                let canvas = wrap.querySelector('canvas');
+                if (!canvas) {
+                    canvas = document.createElement('canvas');
+                    const cw = Math.max(wrap.clientWidth, 240) * 2;
+                    canvas.width = cw;
+                    canvas.height = 400;
+                    canvas.style.width = '100%';
+                    canvas.style.height = '200px';
+                    canvas.style.display = 'block';
+                    wrap.innerHTML = '';
+                    wrap.appendChild(canvas);
+                }
+                wordCloudCanvas = canvas;
+                const ctx = canvas.getContext('2d');
+                const W = canvas.width;
+                const H = canvas.height;
+                ctx.clearRect(0, 0, W, H);
+
+                const maxFreq = words[0] ? words[0][1] : 1;
+                const minFreq = words[words.length - 1] ? words[words.length - 1][1] : 1;
+                const placed = [];
+
+                function fontSize(freq) {
+                    const t = maxFreq === minFreq ? 0.5 : (freq - minFreq) / (maxFreq - minFreq);
+                    return 16 + t * 36;
+                }
+
+                function getColor(freq) {
+                    const t = maxFreq === minFreq ? 0.5 : (freq - minFreq) / (maxFreq - minFreq);
+                    if (t > 0.7) return '#00d4ff';
+                    if (t > 0.4) return '#8b5cf6';
+                    if (t > 0.2) return '#34d399';
+                    return '#a0b8d4';
+                }
+
+                function getGlowColor(freq) {
+                    const t = maxFreq === minFreq ? 0.5 : (freq - minFreq) / (maxFreq - minFreq);
+                    if (t > 0.7) return 'rgba(0,212,255,0.5)';
+                    if (t > 0.4) return 'rgba(139,92,246,0.4)';
+                    return 'rgba(160,184,212,0.2)';
+                }
+
+                function measure(w, fs) {
+                    ctx.font = '600 ' + fs + 'px "PingFang SC","Microsoft YaHei",sans-serif';
+                    const m = ctx.measureText(w);
+                    return { width: m.width, height: fs * 1.15 };
+                }
+
+                function overlaps(x1, y1, bw, bh) {
+                    const pad = 3;
+                    for (const p of placed) {
+                        if (
+                            x1 - pad < p.x + p.w + pad &&
+                            x1 + bw + pad > p.x - pad &&
+                            y1 - pad < p.y + p.h + pad &&
+                            y1 + bh + pad > p.y - pad
+                        ) return true;
+                    }
+                    return false;
+                }
+
+                const cx = W / 2;
+                const cy = H / 2;
+
+                for (const [word, freq] of words) {
+                    const fs = fontSize(freq);
+                    const dim = measure(word, fs);
+                    let found = false;
+                    for (let r = 0; r < Math.min(W, H); r += 2) {
+                        for (let angle = 0; angle < Math.PI * 2; angle += 0.3) {
+                            const x = cx + Math.cos(angle) * r - dim.width / 2;
+                            const y = cy + Math.sin(angle) * r - dim.height / 2;
+                            if (x < 4 || y < 4 || x + dim.width > W - 4 || y + dim.height > H - 4) continue;
+                            if (!overlaps(x, y, dim.width, dim.height)) {
+                                const glow = getGlowColor(freq);
+                                ctx.shadowColor = glow;
+                                ctx.shadowBlur = 6;
+                                ctx.fillStyle = getColor(freq);
+                                ctx.font = '600 ' + fs + 'px "PingFang SC","Microsoft YaHei",sans-serif';
+                                ctx.fillText(word, x + dim.width / 2 - dim.width / 2, y + dim.height * 0.8);
+                                ctx.shadowBlur = 0;
+                                placed.push({ word, freq, x, y, w: dim.width, h: dim.height, fs });
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (found) break;
+                    }
+                }
+
+                // Store placed words for interaction
+                canvas._placedWords = placed;
+                canvas._scaleX = canvas.style.width ? canvas.width / parseFloat(canvas.style.width) : 2;
+                canvas._scaleY = canvas.style.height ? canvas.height / parseFloat(canvas.style.height) : 2;
+            }
+
+            function setupWordCloudInteraction() {
+                const wrap = document.getElementById('wordcloudWrap');
+                if (!wrap) return;
+                let tooltip = document.getElementById('wordcloudTooltip');
+                if (!tooltip) {
+                    tooltip = document.createElement('div');
+                    tooltip.id = 'wordcloudTooltip';
+                    tooltip.className = 'wordcloud-tooltip';
+                    tooltip.style.opacity = '0';
+                    document.body.appendChild(tooltip);
+                }
+
+                wrap.onmousemove = function(e) {
+                    const canvas = wrap.querySelector('canvas');
+                    if (!canvas || !canvas._placedWords) {
+                        tooltip.style.opacity = '0';
+                        return;
+                    }
+                    const rect = canvas.getBoundingClientRect();
+                    const sx = canvas._scaleX || 2;
+                    const sy = canvas._scaleY || 2;
+                    const mx = (e.clientX - rect.left) * sx;
+                    const my = (e.clientY - rect.top) * sy;
+                    let hit = null;
+                    for (const p of canvas._placedWords) {
+                        if (mx >= p.x && mx <= p.x + p.w && my >= p.y && my <= p.y + p.h) {
+                            hit = p;
+                            break;
+                        }
+                    }
+                    if (hit) {
+                        wrap.style.cursor = 'pointer';
+                        tooltip.innerHTML = `
+                            <div style="font-size:${Math.round(hit.fs * 0.55)}px;font-weight:700;color:${canvas._placedWords.indexOf(hit) < 6 ? '#00d4ff' : '#e2e8f0'};">"${escapeHtml(hit.word)}"</div>
+                            <div class="tw-freq">出现 <span style="font-size:1.05rem;">${hit.freq}</span> 次</div>
+                            <div class="tw-hint">点击查看相关原文 →</div>
+                        `;
+                        tooltip.style.opacity = '1';
+                        tooltip.style.left = (e.clientX + 16) + 'px';
+                        tooltip.style.top = (e.clientY - 50) + 'px';
+                    } else {
+                        wrap.style.cursor = 'crosshair';
+                        tooltip.style.opacity = '0';
+                    }
+                };
+
+                wrap.onmouseleave = function() {
+                    tooltip.style.opacity = '0';
+                };
+
+                wrap.onclick = function(e) {
+                    const canvas = wrap.querySelector('canvas');
+                    if (!canvas || !canvas._placedWords) return;
+                    const rect = canvas.getBoundingClientRect();
+                    const sx = canvas._scaleX || 2;
+                    const sy = canvas._scaleY || 2;
+                    const mx = (e.clientX - rect.left) * sx;
+                    const my = (e.clientY - rect.top) * sy;
+                    for (const p of canvas._placedWords) {
+                        if (mx >= p.x && mx <= p.x + p.w && my >= p.y && my <= p.y + p.h) {
+                            showRelatedTexts(p.word);
+                            return;
+                        }
+                    }
+                };
+            }
+
+            function showRelatedTexts(word) {
+                const results = findRelatedTexts(word, allSubmissions);
+                document.getElementById('relatedTextKeyword').textContent = '"' + word + '"';
+                document.getElementById('relatedTextCount').textContent = '共 ' + results.length + ' 条相关记录';
+                let html = '';
+                if (results.length === 0) {
+                    html = '<div style="text-align:center;padding:30px;color:var(--text-dim);">未找到相关内容</div>';
+                } else {
+                    results.forEach(r => {
+                        html += `
+                            <div class="related-text-item">
+                                <div class="related-text-meta">
+                                    <span class="rt-name">${escapeHtml(r.name)}</span>
+                                    <span class="rt-subject">${escapeHtml(r.subject)}</span>
+                                    <span style="color:var(--text-dim);font-size:0.75rem;">[${escapeHtml(r.field)}]</span>
+                                </div>
+                                <div class="related-text-content">${r.highlighted}</div>
+                            </div>`;
+                    });
+                }
+                document.getElementById('relatedTextList').innerHTML = html;
+                document.getElementById('relatedTextModal').style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeRelatedTextModal(event) {
+                if (event && event.target !== document.getElementById('relatedTextModal')) return;
+                document.getElementById('relatedTextModal').style.display = 'none';
+                document.body.style.overflow = '';
+            }
+            window.closeRelatedTextModal = closeRelatedTextModal;
+
+            // ============ 全屏词云功能 ============
+            let floatingWordTimer = null;
+
+            function createFloatingWord() {
+                const words = extractWords(allSubmissions);
+                if (words.length === 0) return;
+                const overlay = document.getElementById('wordcloudFullscreenOverlay');
+                if (!overlay || overlay.style.display !== 'flex') return;
+                
+                const [word, freq] = words[Math.floor(Math.random() * words.length)];
+                const fw = document.createElement('div');
+                fw.className = 'floating-word';
+                
+                const colors = ['#00d4ff', '#8b5cf6', '#34d399', '#f0c060', '#fb923c'];
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                fw.style.color = color;
+                fw.style.fontSize = (18 + Math.random() * 24) + 'px';
+                fw.style.left = (Math.random() * 80 + 10) + '%';
+                fw.style.animationDuration = (6 + Math.random() * 4) + 's';
+                fw.style.animationDelay = Math.random() * 2 + 's';
+                fw.textContent = word;
+                
+                overlay.querySelector('.wordcloud-fullscreen-wrap').appendChild(fw);
+                
+                setTimeout(() => {
+                    fw.remove();
+                }, 12000);
+            }
+
+            function renderFullscreenWordCloud() {
+                const wrap = document.getElementById('wordcloudFullscreenWrap');
+                if (!wrap) return;
+                
+                const words = extractWords(allSubmissions);
+                if (words.length === 0) {
+                    wrap.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-dim);font-size:1.1rem;">📝 暂无足够数据生成词云</div>';
+                    return;
+                }
+                
+                let canvas = wrap.querySelector('canvas');
+                if (!canvas) {
+                    canvas = document.createElement('canvas');
+                    wrap.innerHTML = '';
+                    wrap.appendChild(canvas);
+                }
+                
+                const rect = wrap.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                canvas.width = rect.width * dpr;
+                canvas.height = rect.height * dpr;
+                canvas.style.width = rect.width + 'px';
+                canvas.style.height = rect.height + 'px';
+                
+                const ctx = canvas.getContext('2d');
+                const W = canvas.width;
+                const H = canvas.height;
+                ctx.clearRect(0, 0, W, H);
+                
+                const maxFreq = words[0] ? words[0][1] : 1;
+                const minFreq = words[words.length - 1] ? words[words.length - 1][1] : 1;
+                const placed = [];
+                
+                function fontSize(freq) {
+                    const t = maxFreq === minFreq ? 0.5 : (freq - minFreq) / (maxFreq - minFreq);
+                    return 24 + t * 80;
+                }
+                
+                function getColor(freq) {
+                    const t = maxFreq === minFreq ? 0.5 : (freq - minFreq) / (maxFreq - minFreq);
+                    if (t > 0.7) return '#00d4ff';
+                    if (t > 0.4) return '#8b5cf6';
+                    if (t > 0.2) return '#34d399';
+                    return '#a0b8d4';
+                }
+                
+                function getGlowColor(freq) {
+                    const t = maxFreq === minFreq ? 0.5 : (freq - minFreq) / (maxFreq - minFreq);
+                    if (t > 0.7) return 'rgba(0,212,255,0.4)';
+                    if (t > 0.4) return 'rgba(139,92,246,0.3)';
+                    return 'rgba(160,184,212,0.15)';
+                }
+                
+                function measure(w, fs) {
+                    ctx.font = '600 ' + fs + 'px "PingFang SC","Microsoft YaHei",sans-serif';
+                    const m = ctx.measureText(w);
+                    return { width: m.width, height: fs * 1.15 };
+                }
+                
+                function overlaps(x1, y1, bw, bh) {
+                    const pad = 8;
+                    for (const p of placed) {
+                        if (
+                            x1 - pad < p.x + p.w + pad &&
+                            x1 + bw + pad > p.x - pad &&
+                            y1 - pad < p.y + p.h + pad &&
+                            y1 + bh + pad > p.y - pad
+                        ) return true;
+                    }
+                    return false;
+                }
+                
+                const cx = W / 2;
+                const cy = H / 2;
+                
+                for (const [word, freq] of words) {
+                    const fs = fontSize(freq);
+                    const dim = measure(word, fs);
+                    let found = false;
+                    for (let r = 0; r < Math.min(W, H) * 0.45; r += 3) {
+                        for (let angle = 0; angle < Math.PI * 2; angle += 0.15) {
+                            const x = cx + Math.cos(angle) * r - dim.width / 2;
+                            const y = cy + Math.sin(angle) * r - dim.height / 2;
+                            if (x < 20 || y < 20 || x + dim.width > W - 20 || y + dim.height > H - 20) continue;
+                            if (!overlaps(x, y, dim.width, dim.height)) {
+                                const glow = getGlowColor(freq);
+                                ctx.shadowColor = glow;
+                                ctx.shadowBlur = 12;
+                                ctx.fillStyle = getColor(freq);
+                                ctx.font = '600 ' + fs + 'px "PingFang SC","Microsoft YaHei",sans-serif';
+                                ctx.fillText(word, x + dim.width / 2 - dim.width / 2, y + dim.height * 0.8);
+                                ctx.shadowBlur = 0;
+                                placed.push({ word, freq, x, y, w: dim.width, h: dim.height, fs });
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (found) break;
+                    }
+                }
+                
+                canvas._placedWords = placed;
+                canvas._scaleX = dpr;
+                canvas._scaleY = dpr;
+                
+                updateFullscreenStats(words);
+            }
+            
+            function updateFullscreenStats(words) {
+                const stats = document.getElementById('wordcloudFullscreenStats');
+                if (!stats) return;
+                
+                const totalFreq = words.reduce((sum, [, freq]) => sum + freq, 0);
+                const topWords = words.slice(0, 5).map(([w, f]) => `${w}(${f}次)`).join(', ');
+                
+                stats.innerHTML = `
+                    <div class="stat-item">📊 词汇总数：<span class="stat-value">${words.length}</span></div>
+                    <div class="stat-item">📈 总出现频次：<span class="stat-value">${totalFreq}</span></div>
+                    <div class="stat-item">🔥 Top5：<span class="stat-value">${topWords}</span></div>
+                `;
+            }
+            
+            function openWordCloudFullscreen() {
+                const overlay = document.getElementById('wordcloudFullscreenOverlay');
+                if (!overlay) return;
+                
+                overlay.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+                
+                renderFullscreenWordCloud();
+                
+                const tooltip = document.getElementById('wordcloudTooltip');
+                if (tooltip) tooltip.style.opacity = '0';
+                
+                const wrap = document.getElementById('wordcloudFullscreenWrap');
+                if (wrap) {
+                    wrap.onclick = function(e) {
+                        const canvas = wrap.querySelector('canvas');
+                        if (!canvas || !canvas._placedWords) return;
+                        const rect = canvas.getBoundingClientRect();
+                        const sx = canvas._scaleX || 1;
+                        const sy = canvas._scaleY || 1;
+                        const mx = (e.clientX - rect.left) * sx;
+                        const my = (e.clientY - rect.top) * sy;
+                        for (const p of canvas._placedWords) {
+                            if (mx >= p.x && mx <= p.x + p.w && my >= p.y && my <= p.y + p.h) {
+                                showRelatedTexts(p.word);
+                                return;
+                            }
+                        }
+                    };
+                    
+                    wrap.onmousemove = function(e) {
+                        const canvas = wrap.querySelector('canvas');
+                        const tip = document.getElementById('wordcloudTooltip');
+                        if (!canvas || !canvas._placedWords || !tip) return;
+                        
+                        const rect = canvas.getBoundingClientRect();
+                        const sx = canvas._scaleX || 1;
+                        const sy = canvas._scaleY || 1;
+                        const mx = (e.clientX - rect.left) * sx;
+                        const my = (e.clientY - rect.top) * sy;
+                        let hit = null;
+                        for (const p of canvas._placedWords) {
+                            if (mx >= p.x && mx <= p.x + p.w && my >= p.y && my <= p.y + p.h) {
+                                hit = p;
+                                break;
+                            }
+                        }
+                        
+                        if (hit) {
+                            wrap.style.cursor = 'pointer';
+                            tip.innerHTML = `
+                                <div style="font-size:${Math.round(hit.fs * 0.35)}px;font-weight:700;color:#00d4ff;">"${escapeHtml(hit.word)}"</div>
+                                <div class="tw-freq">出现 <span style="font-size:1.05rem;">${hit.freq}</span> 次</div>
+                                <div class="tw-hint">点击查看相关原文 →</div>
+                            `;
+                            tip.style.opacity = '1';
+                            tip.style.left = (e.clientX + 16) + 'px';
+                            tip.style.top = (e.clientY - 50) + 'px';
+                        } else {
+                            wrap.style.cursor = 'crosshair';
+                            tip.style.opacity = '0';
+                        }
+                    };
+                }
+                
+                floatingWordTimer = setInterval(createFloatingWord, 2000);
+            }
+            
+            function closeWordCloudFullscreen() {
+                const overlay = document.getElementById('wordcloudFullscreenOverlay');
+                if (!overlay) return;
+                
+                overlay.style.display = 'none';
+                document.body.style.overflow = '';
+                
+                if (floatingWordTimer) {
+                    clearInterval(floatingWordTimer);
+                    floatingWordTimer = null;
+                }
+                
+                const wrap = document.getElementById('wordcloudFullscreenWrap');
+                if (wrap) {
+                    wrap.innerHTML = '';
+                }
+            }
+            window.openWordCloudFullscreen = openWordCloudFullscreen;
+            window.closeWordCloudFullscreen = closeWordCloudFullscreen;
+
+            // ============ 详情弹窗 ============
+            window._openDetail = function(filteredIndex) {
+                const submissions = window._filteredSubmissions || allSubmissions;
+                const s = submissions[filteredIndex];
+                if (!s) return;
+                const html = `
+                    <div class="detail-meta">
+                        <div class="detail-meta-item">👤 <strong>${escapeHtml(s.name || '未知')}</strong></div>
+                        <div class="detail-meta-item">📚 <strong>${escapeHtml(s.subject || '未填写')}</strong></div>
+                        <div class="detail-meta-item">🕐 ${formatTime(s.submitted_at)}</div>
+                    </div>
+                    <div class="detail-field">
+                        <div class="detail-label">🌟 3个收获（最触动的点）</div>
+                        <div class="detail-value">
+                            <p>📌 观点/技巧一：${escapeHtml(s.gain1 || '未填写')}</p>
+                            <p>📌 观点/技巧二：${escapeHtml(s.gain2 || '未填写')}</p>
+                            <p>📌 观点/技巧三：${escapeHtml(s.gain3 || '未填写')}</p>
+                        </div>
+                    </div>
+                    <div class="detail-field">
+                        <div class="detail-label">🚀 2个应用（下周尝试的方法）</div>
+                        <div class="detail-value">
+                            <p>🔧 微改变：${escapeHtml(s.apply1 || '未填写')}</p>
+                            <p>💡 新做法：${escapeHtml(s.apply2 || '未填写')}</p>
+                        </div>
+                    </div>
+                    <div class="detail-field">
+                        <div class="detail-label">❓ 1个疑问（想深入探究的问题）</div>
+                        <div class="detail-value">${escapeHtml(s.question || '未填写')}</div>
+                    </div>
+                    <div class="detail-field">
+                        <div class="detail-label">🧠 所教学科的核心素养</div>
+                        <div class="detail-value">${escapeHtml(s.coreCompetence || '未填写')}</div>
+                    </div>
+                `;
+                $detailModalBody.innerHTML = html;
+                $detailModal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            };
+
+            function closeDetailModal(event) {
+                if (event && event.target !== $detailModal) return;
+                $detailModal.style.display = 'none';
+                document.body.style.overflow = '';
+            }
+
+            // ============ 未提交名单弹窗 ============
+            function renderUnsubmittedModal() {
+                let html = '<div class="unsubmitted-grid">';
+                let grandTotal = 0;
+                for (const [groupName, names] of Object.entries(unsubmittedByGroup)) {
+                    const total = GROUP_CONFIG[groupName] ? GROUP_CONFIG[groupName].length : 0;
+                    const submitted = total - names.length;
+                    grandTotal += names.length;
+                    html += `<div class="group-block">
+                        <h4>📁 ${escapeHtml(groupName)} <span class="group-stat">（已提交 ${submitted}/${total}，未提交 ${names.length} 人）</span></h4>
+                        <div class="unsubmitted-names">`;
+                    if (names.length === 0) {
+                        html += '<span class="all-submitted-badge" style="grid-column: 1 / -1; text-align: center;">✅ 全部已提交</span>';
+                    } else {
+                        names.forEach(name => {
+                            html +=
+                                `<span class="unsubmitted-tag">${escapeHtml(name)}</span>`;
+                        });
+                    }
+                    html += `</div></div>`;
+                }
+                html += '</div>';
+                if (grandTotal === 0) {
+                    html =
+                        '<div style="text-align:center;padding:30px;color:var(--accent-green);font-size:1.1rem;">🎉 恭喜！所有人员均已提交！</div>' +
+                        html;
+                }
+                $unsubmittedModalBody.innerHTML = html;
+                updateBadges();
+                updateRightPanel();
+            }
+
+            function openUnsubmittedModal() {
+                isUnsubmittedModalOpen = true;
+                renderUnsubmittedModal();
+                $unsubmittedModal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+                startUnsubmittedRefreshTimer();
+            }
+
+            function closeUnsubmittedModal(event) {
+                if (event && event.target !== $unsubmittedModal) return;
+                isUnsubmittedModalOpen = false;
+                $unsubmittedModal.style.display = 'none';
+                document.body.style.overflow = '';
+                stopUnsubmittedRefreshTimer();
+            }
+
+            // ============ 定时刷新 ============
+            function startUnsubmittedRefreshTimer() {
+                stopUnsubmittedRefreshTimer();
+                unsubmittedRefreshTimer = setInterval(async () => {
+                    if (!isUnsubmittedModalOpen) {
+                        stopUnsubmittedRefreshTimer();
+                        return;
+                    }
+                    try {
+                        const submissions = await fetchData();
+                        allSubmissions = submissions;
+                        const { unsubmittedByGroup: ubg, totalUnsubmitted: tu } = computeUnsubmitted(
+                            allSubmissions);
+                        unsubmittedByGroup = ubg;
+                        totalUnsubmitted = tu;
+                        renderUnsubmittedModal();
+                        updateHeaderStats();
+                        updateLeftPanel();
+                        updateRightPanel();
+                        applyFilters();
+                        updateBadges();
+                        updateChartSubjectPie();
+                        updateSubjectFilter();
+                        renderWordCloud();
+                    } catch (err) {
+                        console.error('未提交名单刷新失败:', err);
+                    }
+                }, REFRESH_INTERVAL_UNSUBMITTED);
+            }
+
+            function stopUnsubmittedRefreshTimer() {
+                if (unsubmittedRefreshTimer) {
+                    clearInterval(unsubmittedRefreshTimer);
+                    unsubmittedRefreshTimer = null;
+                }
+            }
+
+            function startMainRefreshTimer() {
+                stopMainRefreshTimer();
+                mainRefreshTimer = setInterval(async () => {
+                    try {
+                        const submissions = await fetchData();
+                        allSubmissions = submissions;
+                        const { unsubmittedByGroup: ubg, totalUnsubmitted: tu } = computeUnsubmitted(
+                            allSubmissions);
+                        unsubmittedByGroup = ubg;
+                        totalUnsubmitted = tu;
+                        renderAll(allSubmissions);
+                        if (isUnsubmittedModalOpen) {
+                            renderUnsubmittedModal();
+                        }
+                    } catch (err) {
+                        console.error('主数据刷新失败:', err);
+                    }
+                }, REFRESH_INTERVAL_MAIN);
+            }
+
+            function stopMainRefreshTimer() {
+                if (mainRefreshTimer) {
+                    clearInterval(mainRefreshTimer);
+                    mainRefreshTimer = null;
+                }
+            }
+
+            async function refreshAllData() {
+                try {
+                    const submissions = await fetchData();
+                    allSubmissions = submissions;
+                    const { unsubmittedByGroup: ubg, totalUnsubmitted: tu } = computeUnsubmitted(allSubmissions);
+                    unsubmittedByGroup = ubg;
+                    totalUnsubmitted = tu;
+                    renderAll(allSubmissions);
+                    if (isUnsubmittedModalOpen) {
+                        renderUnsubmittedModal();
+                    }
+                    showToast('数据刷新成功');
+                } catch (err) {
+                    showToast('数据刷新失败，请检查网络');
+                }
+            }
+
+            // ============ 全屏功能 ============
+            function toggleFullscreen() {
+                if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                    const el = document.documentElement;
+                    if (el.requestFullscreen) {
+                        el.requestFullscreen();
+                    } else if (el.webkitRequestFullscreen) {
+                        el.webkitRequestFullscreen();
+                    }
+                    showToast('已进入全屏模式');
+                } else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    } else if (document.webkitExitFullscreen) {
+                        document.webkitExitFullscreen();
+                    }
+                    showToast('已退出全屏模式');
+                }
+            }
+
+            // 监听ESC键关闭弹窗
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    if (document.getElementById('relatedTextModal').style.display === 'flex') {
+                        closeRelatedTextModal();
+                    } else if ($unsubmittedModal.style.display === 'flex') {
+                        closeUnsubmittedModal();
+                    } else if ($detailModal.style.display === 'flex') {
+                        closeDetailModal();
                     }
                 }
             });
-        }
 
-        function toggleExpand(index) {
-            const content = document.getElementById(`expand-content-${index}`);
-            const icon = document.getElementById(`expand-icon-${index}`);
-            
-            content.classList.toggle('active');
-            
-            if (icon) {
-                icon.style.transform = content.classList.contains('active') ? 'rotate(180deg)' : 'rotate(0deg)';
-            }
-        }
-
-        function renderList(list) {
-            const container = document.getElementById('dataList');
-            if (list.length === 0) {
-                container.innerHTML = `<div class="text-center py-10 text-gray-500">未找到相关记录</div>`;
-                return;
+            // ============ HTML转义 ============
+            function escapeHtml(str) {
+                if (!str) return '';
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
             }
 
-            container.innerHTML = list.map((item, index) => {
-                return `
-                <div class="cyber-card rounded-2xl p-5">
-                    <div class="flex justify-between items-start mb-2" onclick="toggleExpand(${index})" style="cursor: pointer;">
-                        <div>
-                            <h3 class="text-lg font-bold text-white flex items-center">
-                                ${item.name}
-                                <span class="ml-2 text-xs bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded border border-indigo-500/30 font-normal">
-                                    ${item.subject}
-                                </span>
-                            </h3>
-                            <p class="text-[10px] text-gray-500 mt-1 tech-font">${item.submitted_at}</p>
-                        </div>
-                        <i id="expand-icon-${index}" data-lucide="chevron-down" class="w-5 h-5 text-indigo-400 transition-transform duration-300"></i>
-                    </div>
-
-                    <div class="bg-black/20 p-3 rounded-lg border-l-2 border-cyan-500">
-                        <p class="text-xs text-cyan-400 font-bold mb-1">收获预览：</p>
-                        <p class="text-sm text-gray-300 leading-relaxed">${item.gain1}、${item.gain2}...</p>
-                    </div>
-
-                    <div id="expand-content-${index}" class="expand-content">
-                        <div class="mt-4 pt-4 border-t border-indigo-500/20 space-y-4">
-                            <div class="bg-black/20 p-3 rounded-lg border-l-2 border-cyan-500">
-                                <p class="text-xs text-cyan-400 font-bold mb-2">3个收获：</p>
-                                <div class="space-y-2 text-sm text-gray-300">
-                                    <p><span class="text-cyan-300">观点一：</span>${item.gain1 || '未填写'}</p>
-                                    <p><span class="text-cyan-300">观点二：</span>${item.gain2 || '未填写'}</p>
-                                    <p><span class="text-cyan-300">观点三：</span>${item.gain3 || '未填写'}</p>
-                                </div>
-                            </div>
-
-                            <div class="bg-black/20 p-3 rounded-lg border-l-2 border-indigo-500">
-                                <p class="text-xs text-indigo-400 font-bold mb-2">2个应用：</p>
-                                <div class="space-y-2 text-sm text-gray-300">
-                                    <p><span class="text-indigo-300">微改变：</span>${item.apply1 || '未填写'}</p>
-                                    <p><span class="text-indigo-300">新做法：</span>${item.apply2 || '未填写'}</p>
-                                </div>
-                            </div>
-
-                            <div class="bg-black/20 p-3 rounded-lg border-l-2 border-amber-500">
-                                <p class="text-xs text-amber-400 font-bold mb-2">1个疑问：</p>
-                                <p class="text-sm text-gray-300 leading-relaxed">${item.question || '未填写'}</p>
-                            </div>
-
-                            ${item.coreCompetence ? `
-                            <div class="bg-black/20 p-3 rounded-lg border-l-2 border-emerald-500">
-                                <p class="text-xs text-emerald-400 font-bold mb-2">核心素养：</p>
-                                <p class="text-sm text-gray-300 leading-relaxed">${item.coreCompetence}</p>
-                            </div>
-                            ` : ''}
-                        </div>
-                    </div>
-                </div>
-            `}).join('');
-            lucide.createIcons();
-        }
-
-        function filterData() {
-            const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
-            const subject = document.getElementById('subjectFilter').value;
-
-            const filtered = allSubmissions.filter(item => {
-                const matchKeyword = keyword === '' ||
-                    item.name.toLowerCase().includes(keyword) ||
-                    item.subject.toLowerCase().includes(keyword);
-                const matchSubject = subject === '' || item.subject === subject;
-                return matchKeyword && matchSubject;
-            });
-            renderList(filtered);
-        }
-
-        document.getElementById('searchInput').addEventListener('input', filterData);
-
-        function getUnsubmittedTeachers() {
-            const submittedTeachers = new Set(allSubmissions.map(s => s.name));
-
-            const unsubmittedGroups = {};
-            let totalUnsubmitted = 0;
-
-            for (const [groupName, teachers] of Object.entries(teacherGroups)) {
-                const unsubmittedInGroup = teachers.filter(teacher => !submittedTeachers.has(teacher));
-                if (unsubmittedInGroup.length > 0) {
-                    unsubmittedGroups[groupName] = unsubmittedInGroup;
-                    totalUnsubmitted += unsubmittedInGroup.length;
+            // ============ 导出功能 ============
+            function exportToWord() {
+                if (allSubmissions.length === 0) {
+                    showToast('暂无数据可导出');
+                    return;
                 }
-            }
-
-            return { groups: unsubmittedGroups, total: totalUnsubmitted };
-        }
-
-        function renderUnsubmittedList() {
-            const listContainer = document.getElementById('unsubmittedList');
-            const { groups, total } = getUnsubmittedTeachers();
-
-            if (total === 0) {
-                listContainer.innerHTML = `
-                    <div class="text-center py-10 md:py-20">
-                        <i data-lucide="check-circle" class="w-16 h-16 md:w-24 md:h-24 text-emerald-400 mx-auto mb-4 md:mb-6"></i>
-                        <p class="text-xl md:text-3xl text-emerald-400 font-bold tracking-wide mt-2 md:mt-4">所有教师均已提交反馈</p>
-                    </div>
-                `;
-            } else {
-                let html = `<p class="text-amber-400 text-base md:text-xl mb-4 md:mb-6 font-bold">共 <span class="text-2xl md:text-3xl mx-1">${total}</span> 位教师未提交</p>`;
-
-                html += `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">`;
-
-                for (const [groupName, teachers] of Object.entries(groups)) {
-                    html += `
-                        <div class="bg-slate-800/50 rounded-xl p-4 md:p-6 border border-slate-700/50 hover:border-indigo-500/50 transition-colors">
-                            <h4 class="text-indigo-400 font-bold text-base md:text-lg mb-4 flex items-center">
-                                <i data-lucide="folder" class="w-5 h-5 md:w-6 md:h-6 mr-2"></i>
-                                ${groupName}
-                                <span class="ml-2 text-sm text-gray-500 font-normal">(${teachers.length}人)</span>
-                            </h4>
-                            <div class="flex flex-wrap gap-2 md:gap-3">
-                                ${teachers.map(teacher => `
-                                    <span class="bg-amber-500/10 text-amber-400 px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-sm md:text-base border border-amber-500/20 font-medium tracking-wide">
-                                        ${teacher}
-                                    </span>
-                                `).join('')}
-                            </div>
-                        </div>
-                    `;
-                }
-
-                html += `</div>`;
-                listContainer.innerHTML = html;
-            }
-            lucide.createIcons();
-        }
-
-        function openUnsubmittedModal() {
-            isModalOpen = true;
-            const modal = document.getElementById('unsubmittedModal');
-            renderUnsubmittedList();
-            modal.classList.remove('hidden');
-        }
-
-        function closeUnsubmittedModal() {
-            isModalOpen = false;
-            document.getElementById('unsubmittedModal').classList.add('hidden');
-        }
-
-        function exportData(format) {
-            if (allSubmissions.length === 0) return alert('暂无数据可导出');
-
-            if (format === 'doc') {
-                let html = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>教研反馈</title></head><body>";
-                html += "<h2 style='text-align: center; font-family: sans-serif;'>教研反馈汇总</h2>";
-                allSubmissions.forEach(item => {
-                    html += `<h3 style='font-family: sans-serif; border-bottom: 1px solid #ccc; padding-bottom: 5px;'>${item.name} - ${item.subject} <span style='font-size: 12px; color: #666;'>(${item.submitted_at})</span></h3>`;
-                    html += `<ul style='font-family: sans-serif; line-height: 1.6;'>`;
-                    html += `<li><b>收获1：</b>${item.gain1 || ''}</li>`;
-                    html += `<li><b>收获2：</b>${item.gain2 || ''}</li>`;
-                    html += `<li><b>收获3：</b>${item.gain3 || ''}</li>`;
-                    html += `<li><b>微改变：</b>${item.apply1 || ''}</li>`;
-                    html += `<li><b>新做法：</b>${item.apply2 || ''}</li>`;
-                    html += `<li><b>疑问：</b>${item.question || ''}</li>`;
-                    if (item.coreCompetence) html += `<li><b>核心素养：</b>${item.coreCompetence}</li>`;
-                    html += `</ul><br/>`;
+                let html = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>提交数据</title></head><body>";
+                html += "<h1>教研会数据提交记录</h1><table border='1' cellspacing='0' cellpadding='5' style='border-collapse:collapse;width:100%;text-align:left;'>";
+                html += "<tr style='background-color:#f2f2f2;'><th>姓名</th><th>学科</th><th>提交时间</th><th>三个收获(一)</th><th>三个收获(二)</th><th>三个收获(三)</th><th>两个应用(一)</th><th>两个应用(二)</th><th>一个疑问</th><th>核心素养</th></tr>";
+                allSubmissions.forEach(s => {
+                    html += `<tr>
+                        <td>${escapeHtml(s.name)}</td>
+                        <td>${escapeHtml(s.subject)}</td>
+                        <td>${formatTime(s.submitted_at)}</td>
+                        <td>${escapeHtml(s.gain1)}</td>
+                        <td>${escapeHtml(s.gain2)}</td>
+                        <td>${escapeHtml(s.gain3)}</td>
+                        <td>${escapeHtml(s.apply1)}</td>
+                        <td>${escapeHtml(s.apply2)}</td>
+                        <td>${escapeHtml(s.question)}</td>
+                        <td>${escapeHtml(s.coreCompetence)}</td>
+                    </tr>`;
                 });
-                html += "</body></html>";
+                html += "</table></body></html>";
                 
-                const blob = new Blob(['\ufeff', html], { type: 'application/msword;charset=utf-8' });
+                const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
                 const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `教研反馈数据_${new Date().getTime()}.doc`;
-                a.style.display = 'none';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `提交数据_${getTodayStr()}.doc`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
                 URL.revokeObjectURL(url);
-                return;
+                showToast('Word导出成功');
             }
 
-            const exportData = allSubmissions.map(item => ({
-                '教师姓名': item.name,
-                '所属学科': item.subject,
-                '收获1': item.gain1,
-                '收获2': item.gain2,
-                '收获3': item.gain3,
-                '微改变': item.apply1,
-                '新做法': item.apply2,
-                '疑问': item.question,
-                '核心素养': item.coreCompetence || '',
-                '提交时间': item.submitted_at
-            }));
-
-            const ws = XLSX.utils.json_to_sheet(exportData);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "教研反馈");
-
-            if (format === 'xlsx') {
-                XLSX.writeFile(wb, `教研反馈数据_${new Date().getTime()}.xlsx`);
-            } else {
-                XLSX.writeFile(wb, `教研反馈数据_${new Date().getTime()}.csv`, { bookType: 'csv' });
+            function exportToExcel() {
+                if (allSubmissions.length === 0) {
+                    showToast('暂无数据可导出');
+                    return;
+                }
+                if (typeof XLSX === 'undefined') {
+                    showToast('Excel导出组件加载中，请稍后再试');
+                    return;
+                }
+                const ws_data = [
+                    ["姓名", "学科", "提交时间", "三个收获(一)", "三个收获(二)", "三个收获(三)", "两个应用(微改变)", "两个应用(新做法)", "一个疑问", "核心素养"]
+                ];
+                allSubmissions.forEach(s => {
+                    ws_data.push([
+                        s.name || '',
+                        s.subject || '',
+                        formatTime(s.submitted_at) || '',
+                        s.gain1 || '',
+                        s.gain2 || '',
+                        s.gain3 || '',
+                        s.apply1 || '',
+                        s.apply2 || '',
+                        s.question || '',
+                        s.coreCompetence || ''
+                    ]);
+                });
+                const ws = XLSX.utils.aoa_to_sheet(ws_data);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "提交记录");
+                XLSX.writeFile(wb, `提交数据_${getTodayStr()}.xlsx`);
+                showToast('Excel导出成功');
             }
-        }
 
-        fetchData();
-        setInterval(() => fetchData(true), 10000);
+            // ============ 暴露到全局 ============
+            window._openDetail = window._openDetail;
+            window.openUnsubmittedModal = openUnsubmittedModal;
+            window.closeUnsubmittedModal = closeUnsubmittedModal;
+            window.closeDetailModal = closeDetailModal;
+            window.toggleFullscreen = toggleFullscreen;
+            window.refreshAllData = refreshAllData;
+            window.applyFilters = applyFilters;
+            window.exportToWord = exportToWord;
+            window.exportToExcel = exportToExcel;
+
+            // ============ 初始化 ============
+            async function init() {
+                setupWordCloudInteraction();
+                try {
+                    const submissions = await fetchData();
+                    allSubmissions = submissions;
+                    const { unsubmittedByGroup: ubg, totalUnsubmitted: tu } = computeUnsubmitted(allSubmissions);
+                    unsubmittedByGroup = ubg;
+                    totalUnsubmitted = tu;
+                    renderAll(allSubmissions);
+                    showToast('数据加载成功');
+                } catch (err) {
+                    console.error('初始化失败:', err);
+                    allSubmissions = [];
+                    const { unsubmittedByGroup: ubg, totalUnsubmitted: tu } = computeUnsubmitted([]);
+                    unsubmittedByGroup = ubg;
+                    totalUnsubmitted = tu;
+                    renderAll([]);
+                    showToast('数据加载失败，请检查网络连接后刷新');
+                }
+                startMainRefreshTimer();
+            }
+
+            init();
+
+            // ============ 页面卸载时清理 ============
+            window.addEventListener('beforeunload', () => {
+                stopMainRefreshTimer();
+                stopUnsubmittedRefreshTimer();
+                if (chartSubjectPieInstance) {
+                    chartSubjectPieInstance.destroy();
+                    chartSubjectPieInstance = null;
+                }
+            });
+
+            console.log('🚀 华南司法职业学校教研会数据大屏已就绪');
+            console.log('   - 搜索人物：顶部搜索框');
+            console.log('   - 学科筛选：顶部下拉框');
+            console.log('   - 教师卡片：点击查看详情弹窗');
+            console.log('   - 词云分析：左侧文本洞察，悬停查看频率，点击查看原文');
+            console.log('   - 未提交名单：点击"未提交"按钮查看弹窗（每10秒自动刷新）');
+            console.log('   - 全屏模式：点击⛶按钮');
+            console.log('   - 手动刷新：点击刷新按钮');
+            console.log('   - 主数据每30秒自动刷新');
+            console.log('   - 期望提交总人数：' + TOTAL_EXPECTED + ' 人');
+        })();
     </script>
 </body>
 </html>
