@@ -481,7 +481,7 @@
         .teacher-card {
             background: var(--bg-card);
             border-radius: var(--radius-md);
-            padding: 16px 18px;
+            padding: 14px 16px;
             border: 1px solid rgba(40, 70, 120, 0.45);
             cursor: pointer;
             transition: var(--transition-smooth);
@@ -489,8 +489,9 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            min-height: 100px;
+            gap: 10px;
+            min-height: 80px;
+            justify-content: center;
         }
         .teacher-card:hover {
             border-color: var(--accent-cyan);
@@ -514,13 +515,17 @@
             opacity: 1;
         }
         .card-name {
-            font-size: 1.05rem;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 1.15rem;
             font-weight: 700;
-            color: #fff;
-            letter-spacing: 0.04em;
+            color: #ffffff;
+            letter-spacing: 0.03em;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            line-height: 1.5;
+            flex-shrink: 0;
+            height: auto;
         }
         .card-subject-tag {
             display: inline-block;
@@ -1062,6 +1067,9 @@
         }
 
         /* 相关文本弹窗 */
+        .modal-overlay.related-text-modal {
+            z-index: 2100;
+        }
         .related-text-header {
             display: flex;
             align-items: center;
@@ -1394,7 +1402,7 @@
     </div>
 
     <!-- 相关文本弹窗（词云点击查看原文） -->
-    <div class="modal-overlay" id="relatedTextModal" style="display:none;" onclick="closeRelatedTextModal(event)">
+    <div class="modal-overlay related-text-modal" id="relatedTextModal" style="display:none;" onclick="closeRelatedTextModal(event)">
         <div class="modal-dialog wide" onclick="event.stopPropagation()">
             <div class="modal-header">
                 <div class="related-text-header">
@@ -1655,7 +1663,6 @@
                         <div class="teacher-card" onclick="window._openDetail(${idx})" data-index="${idx}" title="点击查看详情">
                             <div class="card-name">${escapeHtml(s.name || '未知')}</div>
                             <div class="card-subject-tag">${escapeHtml(s.subject || '未填写')}</div>
-                            <div class="card-time">🕐 ${formatTime(s.submitted_at)}</div>
                             <div class="card-click-hint">点击查看完整内容 →</div>
                         </div>`;
                 });
@@ -2040,13 +2047,19 @@
                 }
                 document.getElementById('relatedTextList').innerHTML = html;
                 document.getElementById('relatedTextModal').style.display = 'flex';
-                document.body.style.overflow = 'hidden';
+                const isFullscreen = document.getElementById('wordcloudFullscreenOverlay').style.display === 'flex';
+                if (!isFullscreen) {
+                    document.body.style.overflow = 'hidden';
+                }
             }
 
             function closeRelatedTextModal(event) {
                 if (event && event.target !== document.getElementById('relatedTextModal')) return;
                 document.getElementById('relatedTextModal').style.display = 'none';
-                document.body.style.overflow = '';
+                const isFullscreen = document.getElementById('wordcloudFullscreenOverlay').style.display === 'flex';
+                if (!isFullscreen) {
+                    document.body.style.overflow = '';
+                }
             }
             window.closeRelatedTextModal = closeRelatedTextModal;
 
